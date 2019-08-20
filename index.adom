@@ -1,0 +1,454 @@
+$styles = """
+  html { height: 100%; }
+
+  body {
+    font-family: Helvetica Neue;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100%;
+    margin: 0;
+    padding: 0;
+    background: rgb(66, 66, 66);
+  }
+
+  small, p {
+    color: rgba(255,255,255.9);
+  }
+
+  button:hover {
+    background: rgba(110,110,110);
+  }
+
+  button {
+    width: 100%;
+    position: relative;
+    padding: 5px 10px;
+    font-size: 12px;
+    transition: background 50ms ease;
+    background: rgba(94,94,94);
+    color: rgba(255, 255, 255, 0.9);
+    border: none;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .app-bg-light {
+    background: rgba(94,94,94);
+  }
+
+  .app-bg-dark {
+    background: rgb(40, 40, 40);
+  }
+
+  .app-active {
+    box-shadow: inset 0px 0px 0px 2px #3498db;
+  }
+
+  .app-bord {
+    border: 1px solid rgb(51,51,51);
+  }
+
+  .app-bg-white {
+    background: white;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+    background-color: rgba(25,25,25);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: rgba(70,70,70);
+  }
+
+"""
+
+$toolsActive = 'pencil'
+
+$tools[0].text = 'pencil'
+$tools[0].link = 'fas fa-pencil-alt'
+
+$tools[1].text = 'eraser'
+$tools[1].link = 'fas fa-eraser'
+
+$tools[2].text = 'line'
+$tools[2].link = 'fas fa-slash'
+
+$tools[3].text = 'square'
+$tools[3].link = 'far fa-square'
+
+$tools[4].text = 'paintbucket'
+$tools[4].link = 'fas fa-fill-drip'
+
+$colorsActive = 'background: #000;'
+$colors = ['background: #000;', 'background: #2ecc71;', 'background: #3498db;', 'background: #c0392b;', 'background: #1abc9c;', 'background: #e67e22;', 'background: #ecf0f1;']
+
+$canvasWidth = 100
+$canvasHeight = 100
+$pixelSize = 0
+
+$start.x = 10000 // ASKMATT: negative numbers still don't work
+$start.y = 10000
+$end.x = 0
+$end.y = 0
+$curr.x = 10000
+$curr.y = 10000
+
+$zoomSteps = ['0.25', '0.50', '0.75', '1.0', '1.5', '2.0']
+$zoomActive = '1.0'
+
+module main -->
+
+function make (action, start, end) {
+  let points = []
+
+  let dx = Math.abs(end.x - start.x)
+  let dy = Math.abs(end.y - start.y)
+
+  let xDir = end.x - start.x >= 0 ? 1 : -1
+  let yDir = end.y - start.y >= 0 ? 1 : -1
+
+  let i = 0
+  let lineX = start.x
+  let lineY = start.y
+
+  if (action === 'line') {
+    let step = dx >= dy ? dx : dy
+
+    dx = dx / step
+    dy = dy / step
+
+    while (i < step) {
+      points.push({ x: Math.floor(lineX), y: Math.floor(lineY) })
+      lineX += (dx * xDir)
+      lineY += (dy * yDir)
+      i += 1
+    }
+  }
+
+  if (action === 'square') {
+    points.push({ x: start.x, y: start.y })
+
+    while (i < dx) {
+      lineX += (1 * xDir)
+      points.push({ x: lineX, y: $.start.y })
+      points.push({ x: lineX, y: $.start.y + (dy * yDir) })
+      i += 1
+    }
+
+    i = 0
+
+    while (i < dy) {
+      lineY += (1 * yDir)
+      points.push({ y: lineY, x: $.start.x })
+      points.push({ y: lineY, x: $.start.x + (dx * xDir) })
+      i += 1
+    }
+  }
+
+  return points
+}
+
+function paintBucket (start, pixelArr, targetColor) {
+  const width = $.canvasWidth
+  const height = $.canvasHeight
+
+  let points = []
+
+  function floodFill (x, y, prevC, newC) {
+    if (y >= height || y === -1 || x >= width || x === -1) {
+      return
+    }
+
+    if (prevC === newC) {
+      return
+    } else if (pixelArr[x + $.canvasWidth * y] !== prevC) {
+      return
+    }
+
+    pixelArr[x + $.canvasWidth * y] = newC
+
+    floodFill(x + 1, y, prevC, newC)  // then i can either go south
+    floodFill(x - 1, y, prevC, newC)  // or north
+    floodFill(x, y + 1, prevC, newC)  // or east
+    floodFill(x, y - 1, prevC, newC)  // or west
+  }
+
+  floodFill(start.x, start.y, pixelArr[start.x + $.canvasWidth * start.y], targetColor)
+
+  return points
+}
+
+let history = []
+
+let mousedown = 0
+let cmdDown = 0
+
+document.addEventListener('mouseup', (e) => { mousedown = 0 })
+document.addEventListener('mousedown', () => { mousedown = 1 })
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Meta') cmdDown = 1
+
+  // Set Zoom
+  if (cmdDown === 1 && (e.key === '=' || e.key === '-')) { // CMD + =
+    e.preventDefault()
+
+    const dir = e.key === '=' ?  1 : -1
+    const next = $.zoomSteps.indexOf($.zoomActive) + dir
+
+    if (next !== $.zoomSteps.length && next !== -1) {
+      $.zoomActive = $.zoomSteps[next]
+    }
+
+    $update()
+    document.querySelector('#canvas-container').style.transform = `scale(${$.zoomActive})` // ASKMATT: again need to str interpolation to keep value in state
+  }
+
+  if (cmdDown === 1 && (e.key === 'z')) {
+    $.undoTracker = $.undoTracker || 1
+
+    if (history.length - $.undoTracker > 0) {
+      const prev = history.length - 1 - $.undoTracker
+      $.currUndo = prev
+      $.frameActive = history[prev]
+      $.undoTracker++
+    }
+  }
+})
+document.addEventListener('keyup', (e) => {
+  if (e.key === 'Meta') cmdDown = 0
+  // if (e.key === '') if (!$.timelinePlaying && mousedown === 0) nextFrame()
+  // if (e.key === 'a') if (!$.timelinePlaying && mousedown === 0) prevFrame()
+})
+
+function historyPush () {
+  const copy = $.frameActive.slice()
+  history.push(copy)
+}
+
+function parseActiveColor (str) {
+  let temp = str.slice()
+  return temp.split('background: ')[1].split(';')[0] // ASKMATT: pretty dirty hack. need to include styling syntax in colors arr
+}
+
+function setPreview (points) {
+  for (let i = 0; i < $.framePreview.length; i++) {
+    $.framePreview[i] = undefined
+  }
+
+  points.forEach(point => {
+    $.framePreview[point.x + $.canvasWidth * point.y] = $.colorsActive
+  })
+}
+
+function highlight (e) {
+  const y = Math.floor(e.offsetY / $.pixelSize)
+  const x = Math.floor(e.offsetX / $.pixelSize)
+
+  $.curr.x = x
+  $.curr.y = y
+
+  let points = []
+
+  if (e.type === 'mousedown' && $.undoTracker > 1) {
+    history = history.slice(0, $.currUndo)
+
+    historyPush()
+    $.undoTracker = 1
+  }
+
+  if (mousedown === 1 && $.start.x === 10000 && $.start.y === 10000) {
+    $.start.x = x
+    $.start.y = y
+    $.drawing = 1
+
+    if ($.toolsActive === 'paintbucket') {
+      const target = $.colorsActive
+      paintBucket($.start, $.frameActive, target)
+    }
+  }
+
+  if (mousedown === 1) {
+    e.preventDefault()
+
+    $.end.x = x
+    $.end.y = y
+
+    if ($.toolsActive === 'pencil') {
+      $.frameActive[x + $.canvasWidth * y] = $.colorsActive
+    }
+
+    if ($.toolsActive === 'line') {
+      points = make('line', $.start, $.end)
+      setPreview(points)
+    }
+
+    if ($.toolsActive === 'eraser') {
+      $.frameActive[x + $.canvasWidth * y] = undefined
+    }
+
+    if ($.toolsActive === 'square') {
+      points = make('square', $.start, $.end)
+      setPreview(points)
+    }
+  }
+
+  if (e.type === 'mouseup') {
+    setPreview([])
+
+    if ($.toolsActive === 'line') {
+      make('line', $.start, $.end).forEach(pt => {
+        $.frameActive[pt.x + $.canvasWidth * pt.y] = $.colorsActive
+      })
+    }
+
+    if ($.toolsActive === 'square') {
+      make('square', $.start, $.end).forEach(pt => {
+        $.frameActive[pt.x + $.canvasWidth * pt.y] = $.colorsActive
+      })
+    }
+
+    $.start.x = 10000
+    $.start.y = 10000
+    $.drawing = 0
+
+    historyPush()
+  }
+}
+
+function onCanvasLeave () {
+  $.curr.x = -1
+  $.curr.y = -1
+}
+
+function canvasStart () {
+  function loop () {
+    const canvas = document.querySelector('#canvas')
+    const ctx = canvas.getContext('2d') // ASKMATT: will grabbing this ref every frame cycle be nuts?
+
+    const size = $.pixelSize * 2
+
+    ctx.clearRect(0, 0, 1400, 1400)
+
+    $.frameActive.forEach((pixel, i) => {
+      if (pixel) {
+        const x = Math.floor(i % $.canvasWidth)
+        const y = Math.floor(i / $.canvasWidth)
+
+        ctx.fillStyle = parseActiveColor(pixel)
+        ctx.fillRect(x * size, y * size, size, size)
+      }
+    })
+
+    $.framePreview.forEach((pixel, i) => {
+      if (pixel) {
+        const x = Math.floor(i % $.canvasWidth)
+        const y = Math.floor(i / $.canvasWidth)
+
+        ctx.fillStyle = parseActiveColor(pixel)
+        ctx.fillRect(x * size, y * size, size, size)
+      }
+    })
+
+    ctx.fillStyle = parseActiveColor($.colorsActive)
+    ctx.fillRect($.curr.x * size, $.curr.y * size, size, size)
+
+    requestAnimationFrame(loop)
+  }
+
+  loop()
+}
+
+function UISetActive (e) {
+  const i = parseInt(e.target.dataset.index)
+  const key = e.target.dataset.key
+
+  if (key === 'colors') $.colorsActive = $.colors[i] // generalized set item at active index solution. ex. $toolsActive = $tools[i]
+  else $.toolsActive = $.tools[i].text // generalized set item at active index solution. ex. $toolsActive = $tools[i]
+
+  $update()
+}
+
+function initGrid () {
+  const empty = []
+  const length = $.canvasWidth
+
+  for (let i = 0; i < length; i++) empty[i] = undefined
+
+  return empty
+}
+
+function init() {
+  $.framePreview = initGrid()
+  $.frameActive = initGrid()
+  $.pixelSize = 1400 / $.canvasWidth
+
+  historyPush()
+
+  canvasStart()
+}
+
+init()
+
+<--
+
+tag Btn [
+  button
+    class={props.class}
+    on:click(UISetActive)
+    data-tool={props.tool}
+    data-key={props.key}
+    data-index={props.i} [
+    i style='color:white;' style='font-size: 14px; pointer-events: none;' class={props.img} []
+  ]
+]
+
+doctype html5
+html lang='en' [
+  head [
+    meta charset='utf-8';
+    meta name='viewport' content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no';
+    title | Pixel Art |
+    meta name='description' content='Distraction free writing';
+    link rel="stylesheet" type="text/css" href="https://www.mongodb.com/css/mongodb-framework.css";
+    style | {styles} |
+    script async src="https://www.googletagmanager.com/gtag/js?id=UA-30199022-1" []
+    script defer src="https://use.fontawesome.com/releases/v5.6.1/js/all.js" integrity="sha384-R5JkiUweZpJjELPWqttAYmYM1P3SNEJRM6ecTQF05pFFtxmCO+Y1CiUhvuDzgSVZ" crossorigin="anonymous" []
+  ]
+  body controller(main) [
+    div class="fl-column w-full h-full w-max-1000 m-auto" [
+      div class='fl w-full h-full' [
+        div class='w-35 h-full btn-col app-bg-light app-bord' [
+          each (tool, i in tools) [
+            if (tool.text == toolsActive) [
+              Btn class='h-30 app-active' i={i} tool={tool.text} key='tools' img={tool.link};
+            ]
+            if (tool.text != toolsActive) [
+              Btn class='h-30' i={i} tool={tool.text} key='tools' img={tool.link};
+            ]
+          ]
+        ]
+        div class='fl-column fl-1' style='overflow: overlay;' [
+          div class='w-full h-full app-bg-dark fl' style='overflow: overlay;' [
+            div id='canvas-container' class='p-20 m-auto' style='transform-origin: 0 0; transform: scale(1);' [
+              canvas id='canvas' class='w-700 h-700 app-bg-white m-10' style='cursor: crosshair;' width={1400} height={1400} on:mousedown(highlight) on:mousemove(highlight) on:mouseup(highlight) on:mouseleave(onCanvasLeave);
+            ]
+          ]
+          div class='w-full app-bord app-bg-light h-30 fl fl-center' [
+            small class='m-0' | Zoom: {zoomActive} |
+          ]
+        ]
+        div class='w-35 h-full btn-col app-bg-light app-bord' [
+          each (color, i in colors) [
+            if (color == colorsActive) [
+              button class='h-30 app-active' on:click(UISetActive) data-key='colors' data-index={i} style={color} []
+            ]
+            if (color != colorsActive) [
+              button class='h-30' on:click(UISetActive) data-key='colors' data-index={i} style={color} []
+            ]
+          ]
+        ]
+      ]
+    ]
+  ]
+]

@@ -1,0 +1,61 @@
+html { height: 100%; }
+
+body {
+  font-family: Helvetica Neue;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+  background: rgb(66, 66, 66);
+}
+
+small, p {
+  color: rgba(255,255,255.9);
+}
+
+button:hover {
+  background: rgba(110,110,110);
+}
+
+button {
+  width: 100%;
+  position: relative;
+  padding: 5px 10px;
+  font-size: 12px;
+  transition: background 50ms ease;
+  background: rgba(94,94,94);
+  color: rgba(255, 255, 255, 0.9);
+  border: none;
+  outline: none;
+  cursor: pointer;
+}
+
+.app-bg-light {
+  background: rgba(94,94,94);
+}
+
+.app-bg-dark {
+  background: rgb(40, 40, 40);
+}
+
+.app-active {
+  box-shadow: inset 0px 0px 0px 2px #3498db;
+}
+
+.app-bord {
+  border: 1px solid rgb(51,51,51);
+}
+
+.app-bg-white {
+  background: white;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+  background-color: rgba(25,25,25);
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(70,70,70);
+}

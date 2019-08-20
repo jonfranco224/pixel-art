@@ -354,6 +354,9 @@ html lang='en' [
   ]
   body controller(main) [
     div class="fl-column w-full h-full w-max-1000 m-auto" [
+      div.app-bg-light.app-bord.w-full.h-40 [
+
+      ]
       div class='fl w-full h-full' [
         div class='w-35 h-full btn-col app-bg-light app-bord' [
           each (tool, i in tools) [

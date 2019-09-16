@@ -754,6 +754,12 @@ function canvasPaint (e) {
   CANVAS.end.x = CANVAS.curr.x
   CANVAS.end.y = CANVAS.curr.y
 
+  if ($.tools[$.toolsActive] !== 'eraser') {
+    canvasPutPixelPreview(CANVAS.prev.x, CANVAS.prev.y, undefined)
+    canvasPutPixelPreview(CANVAS.curr.x, CANVAS.curr.y, $.colors[$.colorsActive])
+  }
+
+
   if (e.type === 'mousedown') {
     historyReset()
 

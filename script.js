@@ -201,31 +201,9 @@ window.addEventListener('keyup', (e) => {
   }
 
   if (e.key === 'Backspace') {
-    // if ($.tools[$.toolsActive] === 'move') {
-    //   CANVAS.selected.forEach(pt => {
-    //     const i = pt.x + CANVAS.w * pt.y
-    //     $.animFrames[$.timeline.activeFrame][$.timeline.activeLayer][i] = undefined
-    //   })
-    //
-    //   console.log('here')
-    //
-    //   toggleActive(tools, $.tools.indexOf('select'), 'toolsActive')
-    //
-    //   // Reset canvas to basic
-    //   CANVAS.framePreview = []
-    //   CANVAS.selected = []
-    //   CANVAS_DOM.style.cursor = 'crosshair'
-    // }
+
   }
 })
-
-// window.addEventListener('mousemove', (e) => {
-//   canvasDraw()
-// })
-//
-// window.addEventListener('mouseup', (e) => {
-//   canvasDraw()
-// })
 
 function cloneAnimState () {
   let newAnimFrames = []
@@ -285,6 +263,8 @@ function historyRedo () {
     $.animFrames = $.history[next]
     $.currUndo++
   }
+
+  canvasDraw()
 }
 
 let icons = {}
@@ -658,8 +638,7 @@ function canvasSetPreview (points) {
   })
 }
 function canvasInit (w, h) {
-
-
+  //
   CANVAS.w = w || parseInt(MODAL_DOM.querySelector('#create-w').value) || 0
   CANVAS.h = h || parseInt(MODAL_DOM.querySelector('#create-h').value) || 0
   CANVAS.length = CANVAS.w * CANVAS.h
@@ -781,6 +760,10 @@ function canvasPaint (e) {
     CANVAS.mouseDown = true
     CANVAS.start.x = CANVAS.curr.x
     CANVAS.start.y = CANVAS.curr.y
+
+    if (CANVAS.selected.length > 0 && $.tools[$.toolsActive] !== 'select' && $.tools[$.toolsActive] !== 'move') {
+      canvasWriteSelected()
+    }
   }
 
   if (e.type === 'mouseup') {

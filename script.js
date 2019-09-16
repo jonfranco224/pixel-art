@@ -194,17 +194,6 @@ const $ = {
   timeout: undefined
 }
 
-window.addEventListener('keyup', (e) => {
-  // TODO: log previous tool before select and move to bring back original tool
-  if (e.key === 'Escape') {
-    canvasWriteSelected()
-  }
-
-  if (e.key === 'Backspace') {
-
-  }
-})
-
 function cloneAnimState () {
   let newAnimFrames = []
 
@@ -229,7 +218,7 @@ function historyReset () {
     $.currUndo--
   }
 
-  canvasDraw()
+  // canvasDraw()
 }
 function historyPush () {
   $.history.push(cloneAnimState())
@@ -254,7 +243,7 @@ function historyUndo () {
   // TODO: this is a hack to prevent bugs on frame undo, need to mirror state in undo's
   if ($.timeline.activeFrame === $.animFrames[0].length) $.timeline.activeFrame -= 1
 
-  canvasDraw()
+  // canvasDraw()
 }
 function historyRedo () {
   const next = $.currUndo + 1
@@ -264,7 +253,7 @@ function historyRedo () {
     $.currUndo++
   }
 
-  canvasDraw()
+  // canvasDraw()
 }
 
 let icons = {}
@@ -379,7 +368,7 @@ function timelineLayersUpdate () {
     }
   }
 
-  if (CANVAS.w) canvasDraw()
+  // if (CANVAS.w) // canvasDraw()
 
 }
 function timelineUpdate () {
@@ -480,9 +469,11 @@ function newFrame () {
 
 function nextFrame () {
   $.timeline.activeFrame = ($.timeline.activeFrame + 1) % $.animFrames.length
+  canvasDraw()
 }
 function prevFrame () {
   $.timeline.activeFrame = $.timeline.activeFrame - 1 === -1 ? $.animFrames.length - 1 : $.timeline.activeFrame - 1
+  canvasDraw()
 }
 
 function stop() {
@@ -493,7 +484,7 @@ function play() {
   function loop() {
     $.timeline.isPlaying = 1
     nextFrame()
-    $.timeout = setTimeout(loop, 300)
+    $.timeout = setTimeout(loop, 32)
   }
   loop()
 }
@@ -707,7 +698,7 @@ function canvasInit (w, h) {
   modalClose()
   historyPush()
 
-  canvasDraw()
+  // canvasDraw()
 
   drawAll()
 }
@@ -723,7 +714,7 @@ function canvasWriteSelected () {
   CANVAS.framePreview = []
   CANVAS.selected = []
 
-  canvasDraw()
+  // canvasDraw()
 }
 function canvasPutPixel (x, y, color) {
   const i = x + CANVAS.w * y
@@ -1207,14 +1198,29 @@ function initTimeline () {
 function drawAll () {
   if (CANVAS.length) {
     timelineDraw()
-    //canvasDraw()
+    //// canvasDraw()
 
     requestAnimationFrame(drawAll)
   }
 }
 
-function initUI() {
+window.addEventListener('keyup', (e) => {
+  // TODO: log previous tool before select and move to bring back original tool
+  if (e.key === 'Escape') {
+    canvasWriteSelected()
+  }
 
+  if (e.key === 'Backspace') {
+
+  }
+})
+
+window.addEventListener('click', (e) => {
+  canvasDraw()
+})
+
+function initUI() {
+  //
   initColors()
   initTools()
   initTimeline()

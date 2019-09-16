@@ -484,7 +484,7 @@ function play() {
   function loop() {
     $.timeline.isPlaying = 1
     nextFrame()
-    $.timeout = setTimeout(loop, 32)
+    $.timeout = setTimeout(loop, 100)
   }
   loop()
 }
@@ -698,7 +698,7 @@ function canvasInit (w, h) {
   modalClose()
   historyPush()
 
-  // canvasDraw()
+  canvasDraw()
 
   drawAll()
 }

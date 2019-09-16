@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8">
+  <title>Pixel Fart</title>
+  <link rel="stylesheet" type="text/css" href="https://www.mongodb.com/css/mongodb-framework.css">
+<script defer="true" src="https://use.fontawesome.com/releases/v5.6.1/js/all.js" integrity="sha384-R5JkiUweZpJjELPWqttAYmYM1P3SNEJRM6ecTQF05pFFtxmCO+Y1CiUhvuDzgSVZ" crossorigin="anonymous"></script><link rel="stylesheet" href="./style.css">
+</head>
+<body class='h-full'>
+  <div class='h-min-35 bg-light bord-dark-b fl'>
+    <div class='fl-1 fl fl-justify-between'>
+      <div class='w-170 p-h-15 fl fl-center'>
+        <small></small>
+      </div>
+      <div class='fl-1 fl'>
+        <button class='w-55 bord-dark-l bord-dark-r' onclick='modalOpenCreate()' style='font-size: 16px;'><i class="fas fa-folder-plus"></i></button>
+      </div>
+      <div class='fl-1 fl fl-justify-center'>
+        <button class='w-55 bord-dark-h' onclick='historyUndo()'><i class="fas fa-undo"></i></button>
+        <button class='w-55 bord-dark-r' onclick='historyRedo()'><i class="fas fa-redo"></i></button>
+        <!-- <button class='w-55 bord-dark-r' onclick='historyRedo()'><i class="fas fa-arrows-alt"></i></button> -->
+      </div>
+      <div class='fl-1 fl fl-justify-end'>
+        <a id="download" download="pixelart.png">
+          <button class='w-100 bord-dark-l' onclick='download()'>Download</button>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class='h-full fl w-full' style='height: calc(100% - 35px - 35px - 176px);'>
+    <div class='w-min-170 w-max-170 bg-light'>
+      <div class='bg-light fl p-h-10 p-v-5 fl-wrap bg-mid bord-dark-b'><small>Tools</small></div>
+      <div id='tools' class='bg-light fl p-10 fl-wrap bord-dark-b'></div>
+      <div class='bg-light fl p-h-10 p-v-5 fl-wrap bg-mid bord-dark-b'><small>Colors</small></div>
+      <div id='colors' class='fl fl-wrap p-10'></div>
+
+      <div class='fl fl-justify-center w-full'>
+        <div id='colors-active' class="w-60 h-40 colors-btn m-r-5 clickable" style="border-radius: 2px; box-shadow: inset 0px 0px 0px 2px rgba(95, 95, 95), inset 0px 0px 0px 4px rgb(50, 50, 50);"></div>
+        <!--<div class='fl'>
+          <button id='colors-picker-btn' style='font-size: 14px;'><i class="fas fa-sliders-h"></i></button>
+        </div>-->
+      </div>
+      <input id='colors-picker' style='visibility: hidden;' type='color' />
+    </div>
+    <div class='bg-dark fl-column' style='width: calc(100% - 170px);'>
+      <div id='canvas-container' class='fl-1' style='overflow: scroll;'>
+        <div class='p-20 m-auto h-full' >
+          <canvas id='main-canvas'></canvas>
+          <canvas id='canvas-to-download' style='display: none;'></canvas>
+        </div>
+      </div>
+      <div class='bg-light fl h-30 bord-dark-l bord-dark-r p-h-10'>
+        <div class='fl-1'></div>
+        <div class='fl-1 fl fl-justify-center w-max-180'>
+          <button onclick='prevFrame()'><img src="img/lastframe.svg" style="height: 13px; pointer-events: none;"></button>
+          <button id='play-pause' class='play-active' onclick='togglePlay()'></button>
+          <button onclick='nextFrame()'><img src="img/nextframe.svg" style="height: 13px; pointer-events: none;"></button>
+        </div>
+        <div class='fl-1 fl fl-justify-end'>
+          <button onclick='canvasZoomIn()' style='font-size: 14px;'>
+            <i class="fas fa-search-plus"></i>
+          </button>
+          <button onclick='canvasZoomOut()' style='font-size: 14px;'>
+            <i class="fas fa-search-minus"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class='bg-light bord-dark-t'>
+    <div class='h-min-30 fl'>
+      <div class='fl fl-justify-between w-170 p-l-10 bg-mid bord-dark-b'>
+        <div class='fl fl-center-y'>
+          <small>Timeline</small>
+        </div>
+        <div class='fl'>
+          <button class='bg-light' onclick='newLayer()'>
+            <i class="fas fa-layer-group"></i>
+          </button>
+
+          <button class='bg-light' onclick='newFrame()'>F</button>
+          <!-- <button onclick='newLayer()'>+ L</button> -->
+        </div>
+      </div>
+      <div id='tl-frames' class='hide-scrbar fl-1 fl bord-dark-l' style='overflow: scroll;'>
+        <canvas id='tl-frames-canvas' />
+      </div>
+    </div>
+    <div class='fl-1 h-180 fl'>
+      <div id='tl-layers' class='hide-scrbar w-min-170' style='overflow: scroll;'>
+        <!-- <canvas class='m-b-15' id='tl-layers-canvas' /> -->
+      </div>
+      <div id='tl-cells' class='fl-1 bg-dark bord-dark-l' style='overflow: scroll;'>
+        <canvas class='m-b-15 clickable' id='tl-cells-canvas' />
+      </div>
+    </div>
+  </div>
+
+  <div class='w-full h-full fl-center modals' style='position: absolute; top: 0;'>
+    <div id='create' style='display: none;'>
+      <div class='bg-light' style='border-radius: 3px; overflow: hidden; border: 1px solid rgb(33, 33, 33);'>
+        <small class='fl-center m-0 bg-mid bord-dark-b p-v-5'>New Project</small>
+        <div id='create-config' class='p-20'>
+          <div class='p-b-10 fl-center'>
+            <div class='m-r-5 w-90'><small>Dimensions:</small></div>
+            <div class='fl-1'>
+              <input class='w-full w-max-80'type='text' class='w-100' id='create-w' />
+              <small class='m-h-5'>X</small>
+              <input class='w-full w-max-80'type='text' class='w-100' id='create-h' />
+            </div>
+          </div>
+          <div class='p-b-20 fl-center'>
+            <div class='m-r-5 w-90'><small>Palette:</small></div>
+            <div class='select fl-1'>
+              <select class='w-full' style='display: inline;'>
+                <option>test</option>
+              </select>
+            </div>
+          </div>
+          <div class='fl'>
+            <button class='bord-r-2 bg-red w-full m-r-10' onclick='modalClose()'>Cancel</button>
+            <button class='bord-r-2 bg-green w-full' onclick='canvasInit()'>Create</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id='rename' style='display: none;'>
+      <div class='bg-light' style='border-radius: 3px; overflow: hidden; border: 1px solid rgb(33, 33, 33);'>
+        <small class='fl-center m-0 bg-mid bord-dark-b p-v-5'>Rename Layer</small>
+        <div id='rename-config' class='p-20'>
+          <div class='p-b-20 fl-center'>
+            <div class='m-r-15'><small>Name:</small></div>
+            <div class='fl-1'>
+              <input class='w-full' type='text' id='rename-new-name' />
+            </div>
+          </div>
+          <div class='fl'>
+            <button class='bord-r-2 bg-red w-full m-r-10' onclick='modalClose()'>Cancel</button>
+            <button class='bord-r-2 bg-green w-full' onclick='renameLayer()'>Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script  src="./script.js"></script>
+</body>
+</html>

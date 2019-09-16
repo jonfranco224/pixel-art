@@ -219,6 +219,14 @@ window.addEventListener('keyup', (e) => {
   }
 })
 
+// window.addEventListener('mousemove', (e) => {
+//   canvasDraw()
+// })
+//
+// window.addEventListener('mouseup', (e) => {
+//   canvasDraw()
+// })
+
 function cloneAnimState () {
   let newAnimFrames = []
 
@@ -368,19 +376,6 @@ function timelineBindListeners () {
     timelineLayersUpdate()
   })
 
-  // TL_LAYERS.addEventListener('click', (e) => {
-  //
-  //   const y = Math.floor(e.offsetY / cellHeight)
-  //   const x = e.offsetX
-  //
-  //   $.timeline.activeLayer = y
-  //
-  //   const layer = $.timeline.layers[$.timeline.activeLayer]
-  //
-  //   if (x >= 0 && x <= 30)  layer.hidden = !layer.hidden
-  //   if (x >= 30 && x <= 60) layer.locked = !layer.locked
-  // })
-
   TL_FRAMES.addEventListener('click', (e) => {
     $.timeline.activeFrame = Math.floor(e.offsetX / cellWidth)
   })
@@ -403,6 +398,9 @@ function timelineLayersUpdate () {
       if (i === $.timeline.activeLayer) TL_LAYERS.children[i].style.background = COLOR_HILITE
     }
   }
+
+  if (CANVAS.w) canvasDraw()
+
 }
 function timelineUpdate () {
   const w = $.animFrames.length
@@ -461,7 +459,6 @@ function timelineDraw () {
     TL_CANVAS_CTX.strokeRect((TL.curr_x * canv_w) + 2, (TL.curr_y * canv_h) + 2, canv_w - 4, canv_h - 4)
   }
 }
-
 function renameLayer (e) {
   const newName = MODAL_DOM.querySelector('#rename-new-name').value
 
@@ -755,8 +752,6 @@ function canvasPutPixel (x, y, color) {
   $.animFrames.forEach((frame, frameI) => {
     frame[$.timeline.activeLayer][i] = color
   })
-
-  //$.animFrames[$.timeline.activeFrame][$.timeline.activeLayer][i] = color
 }
 function canvasPutPixelPreview (x, y, color) {
   const i = x + CANVAS.w * y
@@ -927,8 +922,6 @@ function canvasPaint (e) {
 
       const historyLatest = $.history[$.history.length - 2][$.timeline.activeFrame][$.timeline.activeLayer]
 
-      console.log(historyLatest)
-
       // Print the preview to history
       CANVAS.selected.forEach(pt => {
         const index = pt.x + CANVAS.w * pt.y
@@ -992,17 +985,21 @@ function canvasDraw () {
   const numOfLayers = $.animFrames[$.timeline.activeFrame].length
   const toDraw = []
 
-
+  for (let b = 0; b < length; b++) {
+    toDraw[b] = undefined
+  }
 
   // Flatten the layers
   for (let a = numOfLayers - 1; a >= 0; a--) {
     const layer = currFrame[a]
 
-    if ($.timeline.layers[a].hidden) continue // skip drawing anything that's hidden
+    if ($.timeline.layers[a].hidden) {
+      continue // skip drawing anything that's hidden
+    }
 
     // Take the color and assign to existin array overwriting anything that exists already
     for (let b = 0; b < length; b++) {
-      toDraw[b] = layer[b] || undefined
+      if (layer[b]) toDraw[b] = layer[b]
     }
 
     if (a === $.timeline.activeLayer) {
@@ -1228,6 +1225,7 @@ function drawAll () {
 }
 
 function initUI() {
+
   initColors()
   initTools()
   initTimeline()

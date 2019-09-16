@@ -206,6 +206,11 @@ function cloneAnimState () {
 
   return newAnimFrames
 }
+function historyPush () {
+  $.history.push(cloneAnimState())
+
+  $.currUndo = $.currUndo + 1 || 0
+}
 function historyReset () {
   if ($.currUndo <= $.history.length - 1) {
     let newHistory = []
@@ -217,13 +222,6 @@ function historyReset () {
     historyPush()
     $.currUndo--
   }
-
-  // canvasDraw()
-}
-function historyPush () {
-  $.history.push(cloneAnimState())
-
-  $.currUndo = $.currUndo + 1 || 0
 }
 function historyUndo () {
   $.prevTool = $.tools[$.toolsActive]
@@ -242,8 +240,6 @@ function historyUndo () {
 
   // TODO: this is a hack to prevent bugs on frame undo, need to mirror state in undo's
   if ($.timeline.activeFrame === $.animFrames[0].length) $.timeline.activeFrame -= 1
-
-  // canvasDraw()
 }
 function historyRedo () {
   const next = $.currUndo + 1
@@ -252,8 +248,6 @@ function historyRedo () {
     $.animFrames = $.history[next]
     $.currUndo++
   }
-
-  // canvasDraw()
 }
 
 let icons = {}
@@ -745,11 +739,6 @@ function canvasPaint (e) {
   CANVAS.end.x = CANVAS.curr.x
   CANVAS.end.y = CANVAS.curr.y
 
-  if ($.tools[$.toolsActive] !== 'eraser') {
-    canvasPutPixelPreview(CANVAS.prev.x, CANVAS.prev.y, undefined)
-    canvasPutPixelPreview(CANVAS.curr.x, CANVAS.curr.y, $.colors[$.colorsActive])
-  }
-
 
   if (e.type === 'mousedown') {
     historyReset()
@@ -765,6 +754,18 @@ function canvasPaint (e) {
 
   if (e.type === 'mouseup') {
     CANVAS.mouseDown = false
+  }
+
+  if (e.type === 'mouseleave') {
+    CANVAS.curr.x = -1
+    CANVAS.curr.y = -1
+    CANVAS.end.x = -1
+    CANVAS.end.y = -1
+  }
+
+  if ($.tools[$.toolsActive] !== 'eraser') {
+    canvasPutPixelPreview(CANVAS.prev.x, CANVAS.prev.y, undefined)
+    canvasPutPixelPreview(CANVAS.curr.x, CANVAS.curr.y, $.colors[$.colorsActive])
   }
 
   const activeTool = $.tools[$.toolsActive]
@@ -956,8 +957,6 @@ function canvasPaint (e) {
       }
     }
   }
-
-  canvasDraw()
 }
 function canvasDraw () {
   const length = CANVAS.length
@@ -1215,12 +1214,15 @@ window.addEventListener('keyup', (e) => {
   }
 })
 
+window.addEventListener('mousemove', (e) => {
+  canvasDraw()
+})
+
 window.addEventListener('click', (e) => {
   canvasDraw()
 })
 
 function initUI() {
-  //
   initColors()
   initTools()
   initTimeline()

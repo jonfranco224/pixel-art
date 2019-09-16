@@ -22,7 +22,9 @@
       </div>
       <div class='fl-1 fl fl-justify-end'>
         <a id="download" download="pixelart.png" class='h-full' style='display: inline-block;'>
-          <button class='w-100 bord-dark-l h-full' onclick='download()'>Download</button>
+          <button class='w-60 bord-dark-l h-full' onclick='download()' style='font-size: 16px;'>
+            <i class="fas fa-file-download"></i>
+          </button>
         </a>
       </div>
     </div>
@@ -80,7 +82,9 @@
             <i class="fas fa-layer-group"></i>
           </button>
 
-          <button class='bg-light' onclick='newFrame()'>F</button>
+          <button class='bg-light' onclick='newFrame()'>
+            <i class="fas fa-video"></i>
+          </button>
           <!-- <button onclick='newLayer()'>+ L</button> -->
         </div>
       </div>
@@ -89,7 +93,7 @@
       </div>
     </div>
     <div class='fl-1 h-180 fl'>
-      <div id='tl-layers' class='hide-scrbar w-min-170' style='overflow: scroll;'>
+      <div id='tl-layers' class='hide-scrbar w-min-170 p-b-30' style='overflow: scroll;'>
         <!-- <canvas class='m-b-15' id='tl-layers-canvas' /> -->
       </div>
       <div id='tl-cells' class='fl-1 bg-dark bord-dark-l' style='overflow: scroll;'>

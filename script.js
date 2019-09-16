@@ -242,6 +242,8 @@ function historyReset () {
     historyPush()
     $.currUndo--
   }
+
+  canvasDraw()
 }
 function historyPush () {
   $.history.push(cloneAnimState())
@@ -266,7 +268,7 @@ function historyUndo () {
   // TODO: this is a hack to prevent bugs on frame undo, need to mirror state in undo's
   if ($.timeline.activeFrame === $.animFrames[0].length) $.timeline.activeFrame -= 1
 
-
+  canvasDraw()
 }
 function historyRedo () {
   const next = $.currUndo + 1

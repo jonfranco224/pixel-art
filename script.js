@@ -929,16 +929,10 @@ function canvasPaint (e) {
     if (CANVAS.selected.length > 0) {
       if (CANVAS.mouseDown && e.type === 'mousemove') {
         // Translate selection buffer per each mouse movement
-        const newSelected = []
-
-        CANVAS.selected.forEach(pt => {
-          const newX = pt.x + xStep // Get new positions
-          const newY = pt.y + yStep // Get new positions
-          newSelected.push({ x: newX, y: newY, color: pt.color })
-        })
-
-        CANVAS.selected = []
-        CANVAS.selected = newSelected
+        for (let i = 0; i < CANVAS.selected.length; i++) {
+          CANVAS.selected[i].x += xStep
+          CANVAS.selected[i].y += yStep
+        }
       }
     } else {
       // Push the current frame to the selection buffer
@@ -954,16 +948,10 @@ function canvasPaint (e) {
 
       if (e.type === 'mousemove') {
         // Translate selection buffer per each mouse movement
-        const newSelected = []
-
-        CANVAS.selected.forEach(pt => {
-          const newX = pt.x + xStep // Get new positions
-          const newY = pt.y + yStep // Get new positions
-          newSelected.push({ x: newX, y: newY, color: pt.color })
-        })
-
-        CANVAS.selected = []
-        CANVAS.selected = newSelected
+        for (let i = 0; i < CANVAS.selected.length; i++) {
+          CANVAS.selected[i].x += xStep
+          CANVAS.selected[i].y += yStep
+        }
       }
     }
   }

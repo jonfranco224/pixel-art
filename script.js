@@ -71,7 +71,6 @@ function make (action, start, end) {
 
   return points
 }
-
 function squareFilled (start, end) {
   let points = []
 
@@ -175,6 +174,23 @@ function circle (xc, yc, r) { // Function for circle-generation using Bresenham'
 
     return pts
 }
+function blend (r1, g1, b1, r2, g2, b2) {
+  let inv = 1.0 / 255.0
+
+  let r1f = r1 * inv
+  let g1f = g1 * inv
+  let b1f = b1 * inv
+
+  let r2f = r2 * inv
+  let g2f = g2 * inv
+  let b2f = b2 * inv
+
+  return {
+    r: parseInt(r1f * r2f * 255),
+    g: parseInt(g1f * g2f * 255),
+    b: parseInt(b1f * b2f * 255),
+  }
+}
 
 const $ = {
   history: [],
@@ -187,6 +203,7 @@ const $ = {
     activeLayer: 0,
     layers: [{ name: 'Layer 1', hidden: false, locked: false }]
   },
+  prevTool: 0,
   toolsActive: 0,
   tools: ['pencil', 'eraser', 'line', 'paintbucket', 'square', 'circle', 'move', 'select'],
   colorsActive: 0,
@@ -332,15 +349,22 @@ function timelineBindListeners () {
     TL.curr_x = -5
   })
 
-  TL_CANVAS.addEventListener('click', (e) => {
+  TL_CANVAS.addEventListener('mousedown', (e) => {
+    if (CANVAS.selected.length > 0) canvasWriteSelected()
+
     $.timeline.activeFrame = TL.curr_x
     $.timeline.activeLayer = TL.curr_y
 
-    timelineLayersUpdate()
+    timelineUpdate()
+
   })
 
-  TL_FRAMES.addEventListener('click', (e) => {
+  TL_FRAMES.addEventListener('mousedown', (e) => {
+    if (CANVAS.selected.length > 0) canvasWriteSelected()
+
     $.timeline.activeFrame = Math.floor(e.offsetX / cellWidth)
+
+    timelineUpdate()
   })
 }
 function timelineLayersUpdate () {
@@ -361,9 +385,6 @@ function timelineLayersUpdate () {
       if (i === $.timeline.activeLayer) TL_LAYERS.children[i].style.background = COLOR_HILITE
     }
   }
-
-  // if (CANVAS.w) // canvasDraw()
-
 }
 function timelineUpdate () {
   const w = $.animFrames.length
@@ -377,6 +398,8 @@ function timelineUpdate () {
 
   setAttrs(TL_CANVAS, w * cellWidth, h * cellHeight, w * cellWidth * 2, h * cellHeight * 2)
   setAttrs(TL_FRAMES_CANVAS, w * cellWidth, 30, w * cellWidth * 2, 60)
+
+  timelineLayersUpdate()
 }
 function timelineDraw () {
   TL_CANVAS_CTX.clearRect(0, 0, TL_CANVAS.width, TL_CANVAS.height)
@@ -463,11 +486,9 @@ function newFrame () {
 
 function nextFrame () {
   $.timeline.activeFrame = ($.timeline.activeFrame + 1) % $.animFrames.length
-  canvasDraw()
 }
 function prevFrame () {
   $.timeline.activeFrame = $.timeline.activeFrame - 1 === -1 ? $.animFrames.length - 1 : $.timeline.activeFrame - 1
-  canvasDraw()
 }
 
 function stop() {
@@ -553,6 +574,10 @@ function modalOpenRename () {
 }
 
 function toggleActive (group, index, stateRef) {
+  if ($.tools[$.toolsActive] !== 'select' && $.tools[$.toolsActive] !== 'move') {
+    $.prevTool = $.tools[$.toolsActive] // in order to restore after move/select
+  }
+
   group.children[$[stateRef]].classList.remove('active')
   $[stateRef] = parseInt(index)
   group.children[$[stateRef]].classList.add('active')
@@ -636,7 +661,6 @@ function canvasInit (w, h) {
 
   CANVAS_DOM.style.width = `${CANVAS.w * CANVAS.scaleRatio}px`
   CANVAS_DOM.style.height = `${CANVAS.h * CANVAS.scaleRatio}px`
-  CANVAS_DOM.style.background = 'rgb(211, 211, 211)'
   CANVAS_DOM.style.transformOrigin = `center center`
   CANVAS_DOM.style.transform = `scale(${1 / CANVAS.zoom})`
   CANVAS_DOM.style.cursor = 'crosshair'
@@ -671,15 +695,23 @@ function canvasInit (w, h) {
       CANVAS.bgData.data[val + 1] = 128
       CANVAS.bgData.data[val + 2] = 128
       CANVAS.bgData.data[val + 3] = 255
+    } else {
+      CANVAS.bgData.data[val] = 211
+      CANVAS.bgData.data[val + 1] = 211
+      CANVAS.bgData.data[val + 2] = 211
+      CANVAS.bgData.data[val + 3] = 255
     }
 
     pixelIndex++
   }
 
   // TODO: prep to remove when supports multiple canvases, just erasers project for now
+  // TODO: do a more thorough state reset
   $.animFrames = [[[]]]
   $.timeline.layers = []
   $.timeline.layers = [{ name: 'Layer 1', hidden: false, locked: false }]
+  $.timeline.activeFrame = 0
+  $.timeline.activeLayer = 0
   timelineUpdate()
   timelineLayersUpdate()
 
@@ -702,22 +734,22 @@ function canvasWriteSelected () {
     const newY = pt.y
     const newIndex = newX + CANVAS.w * newY
 
-    if (CANVAS.framePreview[newIndex]) canvasPutPixel(newX, newY, CANVAS.framePreview[newIndex])
+    if (pt.color) canvasPutPixel(newX, newY, pt.color)
   })
 
   CANVAS.framePreview = []
   CANVAS.selected = []
-
-  // canvasDraw()
 }
 function canvasPutPixel (x, y, color) {
+  if (x < 0 || x >= CANVAS.w || y < 0 || y >= CANVAS.h) return
+
   const i = x + CANVAS.w * y
 
-  $.animFrames.forEach((frame, frameI) => {
-    frame[$.timeline.activeLayer][i] = color
-  })
+  $.animFrames[$.timeline.activeFrame][$.timeline.activeLayer][i] = color
 }
 function canvasPutPixelPreview (x, y, color) {
+  if (x < 0 || x >= CANVAS.w || y < 0 || y >= CANVAS.h) return
+
   const i = x + CANVAS.w * y
   CANVAS.framePreview[x + CANVAS.w * y] = color
 }
@@ -746,10 +778,6 @@ function canvasPaint (e) {
     CANVAS.mouseDown = true
     CANVAS.start.x = CANVAS.curr.x
     CANVAS.start.y = CANVAS.curr.y
-
-    if (CANVAS.selected.length > 0 && $.tools[$.toolsActive] !== 'select' && $.tools[$.toolsActive] !== 'move') {
-      canvasWriteSelected()
-    }
   }
 
   if (e.type === 'mouseup') {
@@ -763,7 +791,7 @@ function canvasPaint (e) {
     CANVAS.end.y = -1
   }
 
-  if ($.tools[$.toolsActive] !== 'eraser') {
+  if ($.tools[$.toolsActive] !== 'eraser' && $.tools[$.toolsActive] !== 'move' && $.tools[$.toolsActive] !== 'select') {
     canvasPutPixelPreview(CANVAS.prev.x, CANVAS.prev.y, undefined)
     canvasPutPixelPreview(CANVAS.curr.x, CANVAS.curr.y, $.colors[$.colorsActive])
   }
@@ -829,8 +857,10 @@ function canvasPaint (e) {
     const dist = getDist(CANVAS.start.x, CANVAS.end.x, CANVAS.start.y, CANVAS.end.y)
 
     if (CANVAS.mouseDown && e.type === 'mousemove') {
-      const preview = circle(CANVAS.start.x, CANVAS.start.y, dist)
-      canvasSetPreview(preview)
+      canvasSetPreview([])
+      circle(CANVAS.start.x, CANVAS.start.y, dist).forEach(pt => {
+        canvasPutPixelPreview(pt.x, pt.y, activeColor)
+      })
     }
 
     if (e.type === 'mouseup') {
@@ -842,118 +872,93 @@ function canvasPaint (e) {
   }
 
   if (CANVAS.selected.length > 0 && !CANVAS.mouseDown) {
-    let withinBounds = false
+    CANVAS.withinMoveBounds = false
 
     for (let i = 0; i < CANVAS.selected.length; i++) {
       if (CANVAS.curr.x === CANVAS.selected[i].x && CANVAS.curr.y === CANVAS.selected[i].y) {
-        withinBounds = true
+        CANVAS.withinMoveBounds = true
       }
     }
 
-    if (withinBounds && $.tools[$.toolsActive] !== 'move') {
+    if (CANVAS.withinMoveBounds && $.tools[$.toolsActive] !== 'move') {
       toggleActive(tools, $.tools.indexOf('move'), 'toolsActive')
-    } else if (!withinBounds && $.tools[$.toolsActive] === 'move') {
+    } else if (!CANVAS.withinMoveBounds && $.tools[$.toolsActive] === 'move') {
       toggleActive(tools, $.tools.indexOf('select'), 'toolsActive')
     }
   }
 
   if (activeTool === 'select') {
-    if (e.type === 'mousedown' && CANVAS.selected.length > 0) {
-      canvasWriteSelected()
-    }
-
     if (CANVAS.mouseDown && e.type === 'mousemove') {
-      canvasSetPreview([])
-
       const TL = { x: CANVAS.start.x - 1, y: CANVAS.start.y - 1 }
       const BR = { x: CANVAS.end.x + 1, y: CANVAS.end.y + 1 }
       const boundaries = make('square', TL, BR)
 
-      boundaries.forEach((pt, i) => {
-        canvasPutPixelPreview(pt.x, pt.y, pt.color)
+      const selected = squareFilled(CANVAS.start, CANVAS.end)
+
+      CANVAS.selected = []
+
+      selected.forEach((pt, i) => {
+        // Life color from canvas to preview
+        const index = pt.x + CANVAS.w * pt.y
+        const color = $.animFrames[$.timeline.activeFrame][$.timeline.activeLayer][index]
+
+        CANVAS.selected.push({ x: pt.x, y: pt.y, color: color })
       })
     }
 
     if (e.type === 'mouseup') {
       historyPush() // TODO: causes bug to have an extra undo where select was placed but removed when undo'ed back to
 
-      const selected = squareFilled(CANVAS.start, CANVAS.end)
-
-      selected.forEach((pt, i) => {
-        CANVAS.selected.push({ x: pt.x, y: pt.y })
-
-        // Life color from canvas to preview
-        const index = pt.x + CANVAS.w * pt.y
-        const color = $.animFrames[$.timeline.activeFrame][$.timeline.activeLayer][index]
-
-        canvasPutPixel(pt.x, pt.y, undefined)
-        canvasPutPixelPreview(pt.x, pt.y, color)
+      // Lift color from canvas to preview
+      CANVAS.selected.forEach((pt, i) => {
+        canvasPutPixel(pt.x, pt.y, undefined) // replace frame buffer values with undefined
       })
+
     }
   }
 
   if (activeTool === 'move') {
-    const currCanvCopy = $.animFrames[$.timeline.activeFrame][$.timeline.activeLayer].slice()
-
     const xStep = CANVAS.end.x - CANVAS.prev.x
     const yStep = CANVAS.end.y - CANVAS.prev.y
 
-    if (e.type === 'mousedown') {
-      historyPush()
-
-      const historyLatest = $.history[$.history.length - 2][$.timeline.activeFrame][$.timeline.activeLayer]
-
-      // Print the preview to history
-      CANVAS.selected.forEach(pt => {
-        const index = pt.x + CANVAS.w * pt.y
-
-        if (CANVAS.framePreview[index]) {
-          historyLatest[index] = CANVAS.framePreview[index]
-
-          console.log(historyLatest[index])
-        }
-      })
-    }
-
-    if (CANVAS.selected.length === 0 && CANVAS.mouseDown && e.type === 'mousemove') {
-      $.animFrames[$.timeline.activeFrame][$.timeline.activeLayer].forEach((pixelColor, i) => {
-        const x = Math.floor(i % CANVAS.w)
-        const y = Math.floor(i / CANVAS.w)
-
-        const newIndex = (x + xStep) + CANVAS.w * (y + yStep)
-
-        currCanvCopy[newIndex] = pixelColor
-
-        $.animFrames[$.timeline.activeFrame][$.timeline.activeLayer] = currCanvCopy
-      })
-    }
-
     if (CANVAS.selected.length > 0) {
       if (CANVAS.mouseDown && e.type === 'mousemove') {
-        const newPreview = []
+        // Translate selection buffer per each mouse movement
         const newSelected = []
 
-        // Move frame preview to new position each mousemove event
-        CANVAS.framePreview.forEach((pixelColor, i) => {
-          const x = Math.floor(i % CANVAS.w)
-          const y = Math.floor(i / CANVAS.w)
-
-          const newIndex = (x + xStep) + CANVAS.w * (y + yStep)
-
-          newPreview[newIndex] = pixelColor
-        })
-
-        // Move selected pixels to new position each mousemove event
         CANVAS.selected.forEach(pt => {
           const newX = pt.x + xStep // Get new positions
           const newY = pt.y + yStep // Get new positions
-          newSelected.push({ x: newX, y: newY })
+          newSelected.push({ x: newX, y: newY, color: pt.color })
         })
 
         CANVAS.selected = []
         CANVAS.selected = newSelected
-        CANVAS.framePreview = []
-        CANVAS.framePreview = newPreview
+      }
+    } else {
+      // Push the current frame to the selection buffer
+      if (e.type === 'mousedown') {
+        $.animFrames[$.timeline.activeFrame][$.timeline.activeLayer].forEach((color, i) => {
+          const x = Math.floor(i % CANVAS.w)
+          const y = Math.floor(i / CANVAS.w)
+
+          CANVAS.selected.push({ x: x, y: y, color: color })
+          canvasPutPixel(x, y, undefined) // replace frame buffer values with undefined
+        })
+      }
+
+      if (e.type === 'mousemove') {
+        // Translate selection buffer per each mouse movement
+        const newSelected = []
+
+        CANVAS.selected.forEach(pt => {
+          const newX = pt.x + xStep // Get new positions
+          const newY = pt.y + yStep // Get new positions
+          newSelected.push({ x: newX, y: newY, color: pt.color })
+        })
+
+        CANVAS.selected = []
+        CANVAS.selected = newSelected
       }
     }
   }
@@ -992,7 +997,7 @@ function canvasDraw () {
     if (CANVAS.frameHover[b]) toDraw[b] = CANVAS.frameHover[b]
   }
 
-  console.time('Write Buffer');
+  //console.time('Write Buffer');
 
   for (let b = 0; b < toDraw.length; b++) {
     const i = b * 4
@@ -1012,7 +1017,31 @@ function canvasDraw () {
     }
   }
 
-  console.timeEnd('Write Buffer');
+  //console.timeEnd('Write Buffer');
+
+  CANVAS.selected.forEach(pt => {
+    if (pt.x < 0 || pt.x >= CANVAS.w || pt.y < 0 || pt.y >= CANVAS.h) return
+
+    let blended = {}
+    const i = pt.x + CANVAS.w * pt.y
+    const index = i * 4
+    const blendVal = 175
+
+    if (pt.color) {
+      const rgb = pt.color.replace('rgba(', '').replace(')', '').split(',')
+      blended = blend(rgb[0], rgb[1], rgb[2], blendVal, blendVal, blendVal)
+    } else {
+      blended = blend(
+        CANVAS.finalData.data[index],
+        CANVAS.finalData.data[index + 1],
+        CANVAS.finalData.data[index + 2],
+        blendVal, blendVal, blendVal)
+    }
+
+    CANVAS.finalData.data[index] = blended.r
+    CANVAS.finalData.data[index + 1] = blended.g
+    CANVAS.finalData.data[index + 2] = blended.b
+  })
 
   CANVAS_CTX.putImageData(CANVAS.finalData, 0, 0);
 
@@ -1087,7 +1116,7 @@ function initTimeline () {
   playPause.append(icons['pause'])
   playPause.children[1].setAttribute('style', 'height: 13px; pointer-events: none;')
 
-  playPause.addEventListener('click', (e) => {
+  playPause.addEventListener('mousedown', (e) => {
     e.target.classList = $.timeline.isPlaying ? 'stop-active' : 'play-active'
   })
 
@@ -1160,7 +1189,7 @@ function initTimeline () {
       const name = createElement('img', { 'src': `img/${layer.img}`, 'data-name': layer.name, 'style': 'pointer-events: none;'})
       const nameBtn = createElement('button', { 'data-i': i })
 
-      nameBtn.addEventListener('click', (e) => {
+      nameBtn.addEventListener('mousedown', (e) => {
         const index = e.target.dataset.i
         $.timeline.layers[index][layer.attr] = !$.timeline.layers[index][layer.attr]
         timelineLayersUpdate()
@@ -1197,28 +1226,36 @@ function initTimeline () {
 function drawAll () {
   if (CANVAS.length) {
     timelineDraw()
-    //// canvasDraw()
 
     requestAnimationFrame(drawAll)
   }
 }
 
+window.addEventListener('mousedown', (e) => {
+  if (CANVAS.selected.length > 0 && $.tools[$.toolsActive] !== 'move') {
+    canvasWriteSelected()
+  }
+})
+
+window.addEventListener('mousemove', (e) => { canvasDraw() })
+window.addEventListener('click', (e) => { canvasDraw() })
+
 window.addEventListener('keyup', (e) => {
   // TODO: log previous tool before select and move to bring back original tool
-  if (e.key === 'Escape') {
+  if (CANVAS.selected.length > 0 && (e.key === 'Escape' || e.key === 'Enter')) {
     canvasWriteSelected()
+    toggleActive(tools, $.tools.indexOf($.prevTool), 'toolsActive')
   }
 
   if (e.key === 'Backspace') {
+    for (let i = 0; i < CANVAS.selected.length; i++) {
+      CANVAS.selected[i].color = undefined
+    }
 
+    canvasWriteSelected()
+    toggleActive(tools, $.tools.indexOf($.prevTool), 'toolsActive')
   }
-})
 
-window.addEventListener('mousemove', (e) => {
-  canvasDraw()
-})
-
-window.addEventListener('click', (e) => {
   canvasDraw()
 })
 

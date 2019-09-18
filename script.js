@@ -362,9 +362,12 @@ function timelineBindListeners () {
   TL_FRAMES.addEventListener('mousedown', (e) => {
     if (CANVAS.selected.length > 0) canvasWriteSelected()
 
-    $.timeline.activeFrame = Math.floor(e.offsetX / cellWidth)
+    const newFrame = Math.floor(e.offsetX / cellWidth)
 
-    timelineUpdate()
+    if (newFrame < $.animFrames.length) {
+      $.timeline.activeFrame = newFrame
+      timelineUpdate()
+    }
   })
 }
 function timelineLayersUpdate () {
@@ -391,7 +394,7 @@ function timelineUpdate () {
   const h = $.animFrames[0].length
 
   function setAttrs (canv, w, h, canvW, canvH) {
-    canv.setAttribute('style', `width: ${w}px; height: ${h}px;`)
+    canv.setAttribute('style', `width: ${w}px; height: ${h}px; cursor: pointer;`)
     canv.setAttribute('width', canvW)
     canv.setAttribute('height', canvH)
   }
@@ -486,9 +489,11 @@ function newFrame () {
 
 function nextFrame () {
   $.timeline.activeFrame = ($.timeline.activeFrame + 1) % $.animFrames.length
+  canvasDraw()
 }
 function prevFrame () {
   $.timeline.activeFrame = $.timeline.activeFrame - 1 === -1 ? $.animFrames.length - 1 : $.timeline.activeFrame - 1
+  canvasDraw()
 }
 
 function stop() {
@@ -1116,7 +1121,7 @@ function initTimeline () {
   playPause.append(icons['pause'])
   playPause.children[1].setAttribute('style', 'height: 13px; pointer-events: none;')
 
-  playPause.addEventListener('mousedown', (e) => {
+  playPause.addEventListener('click', (e) => {
     e.target.classList = $.timeline.isPlaying ? 'stop-active' : 'play-active'
   })
 

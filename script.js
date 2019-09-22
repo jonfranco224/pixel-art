@@ -123,6 +123,10 @@ function canvasPaint (e) {
       $.FRAMES[$.frameActive][$.layerActive].data[index + 2] = COLORS[$.colorActive + 2]
       $.FRAMES[$.frameActive][$.layerActive].data[index + 3] = COLORS[$.colorActive + 3]
 
+      for (let i = $.FRAMES[$.frameActive].length; i >= 0; i--) {
+        const topColor = $.FRAMES[$.frameActive][$.layerActive] > 0
+      }
+
       CANVAS.buffer.data[index] = $.FRAMES[$.frameActive][$.layerActive].data[index]
       CANVAS.buffer.data[index + 1] = $.FRAMES[$.frameActive][$.layerActive].data[index + 1]
       CANVAS.buffer.data[index + 2] = $.FRAMES[$.frameActive][$.layerActive].data[index + 2]

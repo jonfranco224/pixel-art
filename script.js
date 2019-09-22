@@ -77,6 +77,16 @@ COLORS[9] = 255
 COLORS[10] = 0
 COLORS[11] = 255
 
+COLORS[8] = 0 // Green
+COLORS[9] = 255
+COLORS[10] = 0
+COLORS[11] = 255
+
+COLORS[12] = 255 // Red
+COLORS[13] = 0
+COLORS[14] = 0
+COLORS[15] = 255
+
 const CANVAS_DOM = document.querySelector('#main-canvas')
 CANVAS_DOM.addEventListener('mousemove', canvasPaint)
 CANVAS_DOM.addEventListener('mousedown', canvasPaint)
@@ -115,6 +125,8 @@ function canvasPaint (e) {
   }
 
   if (CANVAS.mouseDown) {
+    // PENCIL TOOL
+
     make('line', CANVAS.prev, CANVAS.curr).forEach(pt => {
       const index = (pt.x + CANVAS.w * pt.y) * 4
 
@@ -124,16 +136,20 @@ function canvasPaint (e) {
       $.FRAMES[$.frameActive][$.layerActive].data[index + 3] = COLORS[$.colorActive + 3]
 
       for (let i = $.FRAMES[$.frameActive].length - 1; i >= 0; i--) {
+
+        // Grab the top most color
         const topColor =
           $.FRAMES[$.frameActive][i].data[index] > 0 ||
           $.FRAMES[$.frameActive][i].data[index + 1] > 0 ||
           $.FRAMES[$.frameActive][i].data[index + 2] > 0
 
+        // Write the top most color
         if (topColor) {
-          CANVAS.buffer.data[index] = $.FRAMES[$.frameActive][$.layerActive].data[index]
-          CANVAS.buffer.data[index + 1] = $.FRAMES[$.frameActive][$.layerActive].data[index + 1]
-          CANVAS.buffer.data[index + 2] = $.FRAMES[$.frameActive][$.layerActive].data[index + 2]
-          CANVAS.buffer.data[index + 3] = $.FRAMES[$.frameActive][$.layerActive].data[index + 3]
+          CANVAS.buffer.data[index] = $.FRAMES[$.frameActive][i].data[index]
+          CANVAS.buffer.data[index + 1] = $.FRAMES[$.frameActive][i].data[index + 1]
+          CANVAS.buffer.data[index + 2] = $.FRAMES[$.frameActive][i].data[index + 2]
+          CANVAS.buffer.data[index + 3] = $.FRAMES[$.frameActive][i].data[index + 3]
+          console.log(i)
           break
         }
       }

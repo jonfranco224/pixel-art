@@ -54,7 +54,8 @@ let $ = {
   FRAMES: [[]],
   frameActive: 0,
   layerActive: 0,
-  colorActive: 8
+  colorActive: 8,
+  toolActive: 'line'
 }
 
 // INIT COLORS
@@ -96,7 +97,6 @@ CANVAS_DOM.addEventListener('mouseup', (e) => { CANVAS.mouseDown = false })
 CANVAS_DOM.addEventListener('mouseleave', (e) => { CANVAS.mouseDown = false })
 
 CANVAS = {
-  scaleRatio: 0,
   w: 0,
   h: 0,
   curr: { x: 0, y: 0 },
@@ -104,6 +104,73 @@ CANVAS = {
   prev: { x: 0, y: 0 },
   end: { x: 0, y: 0 },
   mouseDown: false,
+  toRevertPreview: [],
+  toPrintPreview: []
+}
+
+function canvasPutPixel (pt) {
+  const index = (pt.x + CANVAS.w * pt.y) * 4
+
+  $.FRAMES[$.frameActive][$.layerActive].data[index] = COLORS[$.colorActive]
+  $.FRAMES[$.frameActive][$.layerActive].data[index + 1] = COLORS[$.colorActive + 1]
+  $.FRAMES[$.frameActive][$.layerActive].data[index + 2] = COLORS[$.colorActive + 2]
+  $.FRAMES[$.frameActive][$.layerActive].data[index + 3] = COLORS[$.colorActive + 3]
+
+  for (let i = $.FRAMES[$.frameActive].length - 1; i >= 0; i--) {
+    // Grab the top most color
+    const topColor =
+      $.FRAMES[$.frameActive][i].data[index] > 0 ||
+      $.FRAMES[$.frameActive][i].data[index + 1] > 0 ||
+      $.FRAMES[$.frameActive][i].data[index + 2] > 0
+
+    // Write the top most color
+    if (topColor) {
+      CANVAS.buffer.data[index] = $.FRAMES[$.frameActive][i].data[index]
+      CANVAS.buffer.data[index + 1] = $.FRAMES[$.frameActive][i].data[index + 1]
+      CANVAS.buffer.data[index + 2] = $.FRAMES[$.frameActive][i].data[index + 2]
+      CANVAS.buffer.data[index + 3] = $.FRAMES[$.frameActive][i].data[index + 3]
+      break
+    }
+  }
+}
+
+function canvasPreview (action, pts) {
+  // If in preview mode, revert all previous frame's pixel states
+  if (action === 'preview') {
+    CANVAS.toRevertPreview.forEach(pt => {
+      $.FRAMES[$.frameActive][$.layerActive].data[pt.index] = pt.r
+      $.FRAMES[$.frameActive][$.layerActive].data[pt.index + 1] = pt.g
+      $.FRAMES[$.frameActive][$.layerActive].data[pt.index + 2] = pt.b
+      $.FRAMES[$.frameActive][$.layerActive].data[pt.index + 3] = pt.a
+
+      CANVAS.buffer.data[pt.index] = $.FRAMES[$.frameActive][$.layerActive].data[pt.index]
+      CANVAS.buffer.data[pt.index + 1] = $.FRAMES[$.frameActive][$.layerActive].data[pt.index + 1]
+      CANVAS.buffer.data[pt.index + 2] = $.FRAMES[$.frameActive][$.layerActive].data[pt.index + 2]
+      CANVAS.buffer.data[pt.index + 3] = $.FRAMES[$.frameActive][$.layerActive].data[pt.index + 3]
+    })
+
+    CANVAS.toRevertPreview = []
+  }
+
+  // If we're printing, we can empty the last frame's pixel states and write the new ones
+  if (action === 'print') CANVAS.toRevertPreview = []
+
+  pts.forEach(pt => {
+    const index = (pt.x + CANVAS.w * pt.y) * 4
+
+    // If in preview mode, push to an array of previous pixel states to revert to on next frame
+    if (action === 'preview') {
+      CANVAS.toRevertPreview.push({
+        index: index,
+        r: $.FRAMES[$.frameActive][$.layerActive].data[index],
+        g: $.FRAMES[$.frameActive][$.layerActive].data[index + 1],
+        b: $.FRAMES[$.frameActive][$.layerActive].data[index + 2],
+        a: $.FRAMES[$.frameActive][$.layerActive].data[index + 3]
+      })
+    }
+
+    canvasPutPixel(pt)
+  })
 }
 
 function canvasPaint (e) {
@@ -124,36 +191,24 @@ function canvasPaint (e) {
     CANVAS.mouseDown = false
   }
 
-  if (CANVAS.mouseDown) {
-    // PENCIL TOOL
+  if ($.toolActive === 'pencil') {
+    if (CANVAS.mouseDown) {
+      make('line', CANVAS.prev, CANVAS.curr).forEach(pt => {
+        canvasPutPixel(pt)
+      })
+    }
+  }
 
-    make('line', CANVAS.prev, CANVAS.curr).forEach(pt => {
-      const index = (pt.x + CANVAS.w * pt.y) * 4
+  if ($.toolActive === 'line') {
+    if (CANVAS.mouseDown) {
+      const line = make('line', CANVAS.start, CANVAS.end)
+      canvasPreview('preview', line)
+    }
 
-      $.FRAMES[$.frameActive][$.layerActive].data[index] = COLORS[$.colorActive]
-      $.FRAMES[$.frameActive][$.layerActive].data[index + 1] = COLORS[$.colorActive + 1]
-      $.FRAMES[$.frameActive][$.layerActive].data[index + 2] = COLORS[$.colorActive + 2]
-      $.FRAMES[$.frameActive][$.layerActive].data[index + 3] = COLORS[$.colorActive + 3]
-
-      for (let i = $.FRAMES[$.frameActive].length - 1; i >= 0; i--) {
-
-        // Grab the top most color
-        const topColor =
-          $.FRAMES[$.frameActive][i].data[index] > 0 ||
-          $.FRAMES[$.frameActive][i].data[index + 1] > 0 ||
-          $.FRAMES[$.frameActive][i].data[index + 2] > 0
-
-        // Write the top most color
-        if (topColor) {
-          CANVAS.buffer.data[index] = $.FRAMES[$.frameActive][i].data[index]
-          CANVAS.buffer.data[index + 1] = $.FRAMES[$.frameActive][i].data[index + 1]
-          CANVAS.buffer.data[index + 2] = $.FRAMES[$.frameActive][i].data[index + 2]
-          CANVAS.buffer.data[index + 3] = $.FRAMES[$.frameActive][i].data[index + 3]
-          console.log(i)
-          break
-        }
-      }
-    })
+    if (e.type === 'mouseup') {
+      const line = make('line', CANVAS.start, CANVAS.end)
+      canvasPreview('print', line)
+    }
   }
 }
 
@@ -171,7 +226,7 @@ for (let i = 0; i < CANVAS.buffer.data.length; i += 4) { // Default to black for
   CANVAS.buffer.data[i] = 0
   CANVAS.buffer.data[i + 1] = 0
   CANVAS.buffer.data[i + 2] = 0
-  CANVAS.buffer.data[i + 3] = 255
+  CANVAS.buffer.data[i + 3] = 0
 }
 
 // INIT LAYERS

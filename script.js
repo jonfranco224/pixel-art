@@ -55,7 +55,7 @@ let $ = {
   frameActive: 0,
   layerActive: 0,
   colorActive: 8,
-  toolActive: 'line'
+  toolActive: 'pencil'
 }
 
 // INIT COLORS
@@ -72,11 +72,6 @@ COLORS[5] = 0
 COLORS[6] = 0
 COLORS[7] = 255
 // Need black blend here
-
-COLORS[8] = 0 // Green
-COLORS[9] = 255
-COLORS[10] = 0
-COLORS[11] = 255
 
 COLORS[8] = 0 // Green
 COLORS[9] = 255
@@ -106,32 +101,6 @@ CANVAS = {
   mouseDown: false,
   toRevertPreview: [],
   toPrintPreview: []
-}
-
-function canvasPutPixel (pt) {
-  const index = (pt.x + CANVAS.w * pt.y) * 4
-
-  $.FRAMES[$.frameActive][$.layerActive].data[index] = COLORS[$.colorActive]
-  $.FRAMES[$.frameActive][$.layerActive].data[index + 1] = COLORS[$.colorActive + 1]
-  $.FRAMES[$.frameActive][$.layerActive].data[index + 2] = COLORS[$.colorActive + 2]
-  $.FRAMES[$.frameActive][$.layerActive].data[index + 3] = COLORS[$.colorActive + 3]
-
-  for (let i = $.FRAMES[$.frameActive].length - 1; i >= 0; i--) {
-    // Grab the top most color
-    const topColor =
-      $.FRAMES[$.frameActive][i].data[index] > 0 ||
-      $.FRAMES[$.frameActive][i].data[index + 1] > 0 ||
-      $.FRAMES[$.frameActive][i].data[index + 2] > 0
-
-    // Write the top most color
-    if (topColor) {
-      CANVAS.buffer.data[index] = $.FRAMES[$.frameActive][i].data[index]
-      CANVAS.buffer.data[index + 1] = $.FRAMES[$.frameActive][i].data[index + 1]
-      CANVAS.buffer.data[index + 2] = $.FRAMES[$.frameActive][i].data[index + 2]
-      CANVAS.buffer.data[index + 3] = $.FRAMES[$.frameActive][i].data[index + 3]
-      break
-    }
-  }
 }
 
 function canvasPreview (action, pts) {
@@ -194,7 +163,8 @@ function canvasPaint (e) {
   if ($.toolActive === 'pencil') {
     if (CANVAS.mouseDown) {
       make('line', CANVAS.prev, CANVAS.curr).forEach(pt => {
-        canvasPutPixel(pt)
+        const pixelIndex = pt.x + CANVAS.w * pt.y
+        canvasPaintPixel(pixelIndex, 3, 8)
       })
     }
   }
@@ -229,25 +199,99 @@ for (let i = 0; i < CANVAS.buffer.data.length; i += 4) { // Default to black for
   CANVAS.buffer.data[i + 3] = 0
 }
 
-// INIT LAYERS
-for (let i = 0; i < 10; i++) {
-  $.FRAMES[$.frameActive].push(new ImageData(CANVAS.w, CANVAS.h))
+
+const pixelResTotal = CANVAS.w * CANVAS.h
+
+console.log(pixelResTotal)
+
+const FRAMES = []
+$.frameActive = 0
+
+// first 32 bytes: array into COLORS table
+// last 4 bytes: array into first 32 bytes
+FRAMES[$.frameActive] = new Uint8Array(pixelResTotal * 36)
+
+const CURR_FRAME = FRAMES[$.frameActive]
+
+function getFirstVisibleLayerIndex (pixelIndex) {
+  let index = -1, v
+  const offset = pixelIndex * 36
+
+  if (CURR_FRAME[offset + 32] > 0) {
+    v = CURR_FRAME[offset + 32]|0 // make sure its an integer
+    index = 0
+  } else if (CURR_FRAME[offset + 33] > 0) {
+    v = CURR_FRAME[offset + 33]|0
+    index = 8
+  } else if (CURR_FRAME[offset + 34] > 0) {
+    v = CURR_FRAME[offset + 34]|0
+    index = 16
+  } else if (CURR_FRAME[offset + 35] > 0) {
+    v = CURR_FRAME[offset + 35]|0
+    index = 24
+  }
+
+  if ((v & 128) !== 0) index += 0 // to set the first bit: v |= 128, CURR_FRAME[0] = colorIndex
+  else if ((v & 64) !== 0) index += 1 // to set the second: v |= 64, CURR_FRAME[1] = colorIndex
+  else if ((v & 32) !== 0) index += 2
+  else if ((v & 16) !== 0) index += 3
+  else if ((v & 8) !== 0) index += 4
+  else if ((v & 4) !== 0) index += 5
+  else if ((v & 2) !== 0) index += 6
+  else if ((v & 1) !== 0) index += 7
+
+  return index
+}
+
+function canvasPaintPixel(pixelIndex, layerIndex, colorIndex) {
+  const offset = pixelIndex * 36
+  CURR_FRAME[offset + layerIndex] = colorIndex
+  CURR_FRAME[offset + 32 + (~~(layerIndex / 8))] |= (128 >> (layerIndex % 8))
 }
 
 // Draw final frame buffer
-let toggle = 0
+function canvasDraw () {
+  let toggle = 0
 
-function draw () {
-	toggle = toggle === 0 ? 1 : 0
+  function draw () {
+    toggle = toggle === 0 ? 1 : 0
 
-  if (toggle === 1) {
+    if (toggle === 1) {
+      requestAnimationFrame(draw)
+      return
+    }
+
+    //console.time('draw loop')
+    for (let pixI = 0; pixI < pixelResTotal; pixI++) {
+      const bufI = pixI * 4 // calc pixel operation offset
+
+      // step 1: grab index of first visible layer
+      let colorIndex = CURR_FRAME[(pixI * 36) + getFirstVisibleLayerIndex(pixI)]
+
+      // step 2: grab color index from first 32 bytes
+      // step 3: grab color value from COLORS
+      CANVAS.buffer.data[bufI] = COLORS[colorIndex]
+      CANVAS.buffer.data[bufI + 1] = COLORS[colorIndex + 1]
+      CANVAS.buffer.data[bufI + 2] = COLORS[colorIndex + 2]
+      CANVAS.buffer.data[bufI + 3] = COLORS[colorIndex + 3]
+    }
+    //console.timeEnd('draw loop')
+    ctx.putImageData(CANVAS.buffer, 0, 0)
+
     requestAnimationFrame(draw)
-    return
   }
 
-  ctx.putImageData(CANVAS.buffer, 0, 0)
-
-	requestAnimationFrame(draw)
+  draw()
 }
 
-draw()
+function main () {
+  console.time('paint loop')
+  for (let a = 0; a < pixelResTotal; a++) {
+    canvasPaintPixel(a, 5, 4)
+  }
+  console.timeEnd('paint loop')
+
+  canvasDraw()
+}
+
+main()

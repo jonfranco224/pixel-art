@@ -53,7 +53,7 @@ function make(action, start, end) {
 let $ = {
   FRAMES: [[]],
   frameActive: 0,
-  layerActive: 5,
+  layerActive: 25,
   colorActive: 12,
   toolActive: 'pencil'
 }
@@ -122,7 +122,7 @@ function canvasPreview (action, pts, layerIndex, colorIndex) {
 
     // If in preview mode, push to an array of previous pixel states to revert to on next frame
     if (action === 'preview') {
-      let color = CURR_FRAME[(pixelIndex * 36) + layerIndex]
+      let color = CURR_FRAME[(pixOffsets[pixelIndex]) + layerIndex]
 
       CANVAS.toRevertPreview.push({
         pixelIndex: pixelIndex,
@@ -195,11 +195,16 @@ FRAMES[$.frameActive] = new Uint8Array(pixelResTotal * 36)
 
 const CURR_FRAME = FRAMES[$.frameActive]
 
+const pixOffsets = new Uint32Array(pixelResTotal)
+for (let i = 0; i < pixelResTotal; i++) {
+  pixOffsets[i] = i * 36
+}
+
 function getFirstVisibleLayerIndex (pixelIndex) {
   //console.time('draw loop get visible')
 
   let index = -1, v
-  const offset = pixelIndex * 36
+  const offset = pixOffsets[pixelIndex]
 
   if (CURR_FRAME[offset + 32] > 0) {
     v = CURR_FRAME[offset + 32]|0 // make sure its an integer
@@ -234,7 +239,7 @@ function getFirstVisibleLayerIndex (pixelIndex) {
 }
 
 function canvasPaintPixel(pixelIndex, layerIndex, colorIndex) {
-  const offset = pixelIndex * 36
+  const offset = pixOffsets[pixelIndex]
   CURR_FRAME[offset + layerIndex] = colorIndex
   CURR_FRAME[offset + 32 + (~~(layerIndex / 8))] |= (128 >> (layerIndex % 8))
 }
@@ -256,7 +261,7 @@ function canvasDraw () {
       const bufI = pixI * 4 // calc pixel operation offset
 
       // step 1: grab index of first visible layer
-      let colorIndex = CURR_FRAME[(pixI * 36) + getFirstVisibleLayerIndex(pixI)]
+      let colorIndex = CURR_FRAME[pixOffsets[pixI] + getFirstVisibleLayerIndex(pixI)]
 
       // step 2: grab color index from first 32 bytes
       // step 3: grab color value from COLORS
@@ -278,6 +283,6 @@ function main () {
   canvasDraw()
 }
 
-console.log(CURR_FRAME)
+
 
 main()

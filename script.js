@@ -53,8 +53,8 @@ function make(action, start, end) {
 let $ = {
   FRAMES: [[]],
   frameActive: 0,
-  layerActive: 0,
-  colorActive: 8,
+  layerActive: 5,
+  colorActive: 12,
   toolActive: 'pencil'
 }
 
@@ -67,7 +67,7 @@ COLORS[1] = 0
 COLORS[2] = 0
 COLORS[3] = 0
 
-COLORS[4] = 0 // Black
+COLORS[4] = 0 // Empty
 COLORS[5] = 0
 COLORS[6] = 0
 COLORS[7] = 255
@@ -103,19 +103,12 @@ CANVAS = {
   toPrintPreview: []
 }
 
-function canvasPreview (action, pts) {
+function canvasPreview (action, pts, layerIndex, colorIndex) {
   // If in preview mode, revert all previous frame's pixel states
   if (action === 'preview') {
     CANVAS.toRevertPreview.forEach(pt => {
-      $.FRAMES[$.frameActive][$.layerActive].data[pt.index] = pt.r
-      $.FRAMES[$.frameActive][$.layerActive].data[pt.index + 1] = pt.g
-      $.FRAMES[$.frameActive][$.layerActive].data[pt.index + 2] = pt.b
-      $.FRAMES[$.frameActive][$.layerActive].data[pt.index + 3] = pt.a
-
-      CANVAS.buffer.data[pt.index] = $.FRAMES[$.frameActive][$.layerActive].data[pt.index]
-      CANVAS.buffer.data[pt.index + 1] = $.FRAMES[$.frameActive][$.layerActive].data[pt.index + 1]
-      CANVAS.buffer.data[pt.index + 2] = $.FRAMES[$.frameActive][$.layerActive].data[pt.index + 2]
-      CANVAS.buffer.data[pt.index + 3] = $.FRAMES[$.frameActive][$.layerActive].data[pt.index + 3]
+      const pixI = pt.x + CANVAS.w * pt.y
+      canvasPaintPixel(pt.pixelIndex, pt.layerIndex, pt.colorIndex)
     })
 
     CANVAS.toRevertPreview = []
@@ -125,20 +118,20 @@ function canvasPreview (action, pts) {
   if (action === 'print') CANVAS.toRevertPreview = []
 
   pts.forEach(pt => {
-    const index = (pt.x + CANVAS.w * pt.y) * 4
+    const pixelIndex = pt.x + CANVAS.w * pt.y
 
     // If in preview mode, push to an array of previous pixel states to revert to on next frame
     if (action === 'preview') {
+      let color = CURR_FRAME[(pixelIndex * 36) + layerIndex]
+
       CANVAS.toRevertPreview.push({
-        index: index,
-        r: $.FRAMES[$.frameActive][$.layerActive].data[index],
-        g: $.FRAMES[$.frameActive][$.layerActive].data[index + 1],
-        b: $.FRAMES[$.frameActive][$.layerActive].data[index + 2],
-        a: $.FRAMES[$.frameActive][$.layerActive].data[index + 3]
+        pixelIndex: pixelIndex,
+        layerIndex: layerIndex,
+        colorIndex: color
       })
     }
 
-    canvasPutPixel(pt)
+    canvasPaintPixel(pixelIndex, layerIndex, colorIndex)
   })
 }
 
@@ -164,20 +157,20 @@ function canvasPaint (e) {
     if (CANVAS.mouseDown) {
       make('line', CANVAS.prev, CANVAS.curr).forEach(pt => {
         const pixelIndex = pt.x + CANVAS.w * pt.y
-        canvasPaintPixel(pixelIndex, 3, 8)
+        canvasPaintPixel(pixelIndex, $.layerActive, $.colorActive)
       })
     }
   }
 
   if ($.toolActive === 'line') {
     if (CANVAS.mouseDown) {
-      const line = make('line', CANVAS.start, CANVAS.end)
-      canvasPreview('preview', line)
+      const line = make('line', CANVAS.start, CANVAS.prev)
+      canvasPreview('preview', line, $.layerActive, $.colorActive)
     }
 
     if (e.type === 'mouseup') {
-      const line = make('line', CANVAS.start, CANVAS.end)
-      canvasPreview('print', line)
+      const line = make('line', CANVAS.start, CANVAS.prev)
+      canvasPreview('print', line, $.layerActive, $.colorActive)
     }
   }
 }
@@ -189,20 +182,9 @@ const ctx = canvas.getContext('2d')
 
 CANVAS.w = canvas.width
 CANVAS.h = canvas.height
-
 CANVAS.buffer = new ImageData(CANVAS.w, CANVAS.h)
 
-for (let i = 0; i < CANVAS.buffer.data.length; i += 4) { // Default to black for now, need to change to BG
-  CANVAS.buffer.data[i] = 0
-  CANVAS.buffer.data[i + 1] = 0
-  CANVAS.buffer.data[i + 2] = 0
-  CANVAS.buffer.data[i + 3] = 0
-}
-
-
 const pixelResTotal = CANVAS.w * CANVAS.h
-
-console.log(pixelResTotal)
 
 const FRAMES = []
 $.frameActive = 0
@@ -214,6 +196,8 @@ FRAMES[$.frameActive] = new Uint8Array(pixelResTotal * 36)
 const CURR_FRAME = FRAMES[$.frameActive]
 
 function getFirstVisibleLayerIndex (pixelIndex) {
+  //console.time('draw loop get visible')
+
   let index = -1, v
   const offset = pixelIndex * 36
 
@@ -240,7 +224,13 @@ function getFirstVisibleLayerIndex (pixelIndex) {
   else if ((v & 2) !== 0) index += 6
   else if ((v & 1) !== 0) index += 7
 
-  return index
+  //console.timeEnd('draw loop get visible')
+
+  if (index !== -1) {
+    return index
+  } else {
+    return 0
+  }
 }
 
 function canvasPaintPixel(pixelIndex, layerIndex, colorIndex) {
@@ -285,13 +275,9 @@ function canvasDraw () {
 }
 
 function main () {
-  console.time('paint loop')
-  for (let a = 0; a < pixelResTotal; a++) {
-    canvasPaintPixel(a, 5, 4)
-  }
-  console.timeEnd('paint loop')
-
   canvasDraw()
 }
+
+console.log(CURR_FRAME)
 
 main()

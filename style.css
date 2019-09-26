@@ -19,6 +19,7 @@ body {
   padding: 0;
   scrollbar-width: thin;
   color: rgba(255, 255, 255, .9);
+  background: rgb(40, 40, 40);
 }
 
 button {

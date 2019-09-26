@@ -1,4 +1,4 @@
-function make(action, start, end) {
+function make (action, start, end, r) {
   let points = []
 
   let dx = Math.abs(end.x - start.x)
@@ -10,6 +10,9 @@ function make(action, start, end) {
   let i = 0
   let lineX = start.x
   let lineY = start.y
+
+  let xStep = 0
+  let yStep = 0
 
   if (action === 'line') {
     let step = dx >= dy ? dx : dy
@@ -28,12 +31,12 @@ function make(action, start, end) {
   }
 
   if (action === 'square') {
-    points.push({ x: start.x, y: start.y, color: i % 2 === 0 ? 'rgba(255, 255, 255, 255)' : 'rgba(0, 0, 0, 255)' })
+    points.push({ x: start.x, y: start.y })
 
     while (i < dx) {
       lineX += (1 * xDir)
-      points.push({ x: lineX, y: start.y, color: i % 2 === 0 ? 'rgba(255, 255, 255, 255)' : 'rgba(0, 0, 0, 255)' })
-      points.push({ x: lineX, y: start.y + (dy * yDir), color: i % 2 === 0 ? 'rgba(255, 255, 255, 255)' : 'rgba(0, 0, 0, 255)' })
+      points.push({ x: lineX, y: start.y })
+      points.push({ x: lineX, y: start.y + (dy * yDir) })
       i += 1
     }
 
@@ -41,21 +44,85 @@ function make(action, start, end) {
 
     while (i < dy) {
       lineY += (1 * yDir)
-      points.push({ y: lineY, x: start.x, color: i % 2 === 0 ? 'rgba(255, 255, 255, 255)' : 'rgba(0, 0, 0, 255)' })
-      points.push({ y: lineY, x: start.x + (dx * xDir), color: i % 2 === 0 ? 'rgba(255, 255, 255, 255)' : 'rgba(0, 0, 0, 255)' })
+      points.push({ y: lineY, x: start.x })
+      points.push({ y: lineY, x: start.x + (dx * xDir) })
       i += 1
+    }
+  }
+
+  if (action === 'square-filled') {
+    while (xStep <= dx) {
+      yStep = 0
+      lineY = start.y
+
+      while (yStep <= dy) {
+        points.push({ x: lineX, y: lineY })
+
+        lineY += (1 * yDir)
+        yStep += 1
+      }
+
+      lineX += (1 * xDir)
+      xStep += 1
+    }
+  }
+
+  if (action === 'circle') { // Function for circle-generation using Bresenham's algorithm
+    let x = 0
+    let y = r
+    let d = 3 - 2 * r
+
+    points.push({ x: start.x+x, y: start.y+y })
+    points.push({ x: start.x-x, y: start.y+y })
+    points.push({ x: start.x+x, y: start.y-y })
+    points.push({ x: start.x-x, y: start.y-y })
+    points.push({ x: start.x+y, y: start.y+x })
+    points.push({ x: start.x-y, y: start.y+x })
+    points.push({ x: start.x+y, y: start.y-x })
+    points.push({ x: start.x-y, y: start.y-x })
+
+    while (y >= x) { // for each pixel we will draw all eight pixels
+      x++;
+
+      // check for decision parameter and correspondingly update d, x, y
+      if (d > 0) {
+          y--
+          d = d + 4 * (x - y) + 10
+      } else {
+        d = d + 4 * x + 6
+      }
+
+      points.push({ x: start.x+x, y: start.y+y })
+      points.push({ x: start.x-x, y: start.y+y })
+      points.push({ x: start.x+x, y: start.y-y })
+      points.push({ x: start.x-x, y: start.y-y })
+      points.push({ x: start.x+y, y: start.y+x })
+      points.push({ x: start.x-y, y: start.y+x })
+      points.push({ x: start.x+y, y: start.y-x })
+      points.push({ x: start.x-y, y: start.y-x })
     }
   }
 
   return points
 }
+function dist (x1, x2, y1, y2) {
+  return Math.floor(Math.sqrt(Math.pow((x2 - x1), 2) + Math.pow((y2 - y1), 2)))
+}
 
 let $ = {
-  FRAMES: [[]],
+  FRAMES: [],
   frameActive: 0,
   layerActive: 25,
-  colorActive: 12,
+  colorActive: 8,
   toolActive: 'pencil'
+}
+
+const FRAMES = []
+
+function toggleActiveTool (e) {
+  e.target.parentNode.querySelector(`[data-tool="${$.toolActive}"]`).classList.remove('active')
+  $.toolActive = e.target.dataset.tool
+  e.target.parentNode.querySelector(`[data-tool="${$.toolActive}"]`).classList.add('active')
 }
 
 // INIT COLORS
@@ -99,40 +166,238 @@ CANVAS = {
   prev: { x: 0, y: 0 },
   end: { x: 0, y: 0 },
   mouseDown: false,
-  toRevertPreview: [],
-  toPrintPreview: []
+  toRevertPreview: []
 }
 
-function canvasPreview (action, pts, layerIndex, colorIndex) {
-  // If in preview mode, revert all previous frame's pixel states
-  if (action === 'preview') {
-    CANVAS.toRevertPreview.forEach(pt => {
-      const pixI = pt.x + CANVAS.w * pt.y
-      canvasPaintPixel(pt.pixelIndex, pt.layerIndex, pt.colorIndex)
-    })
+// INIT CANVAS
+const canvas = document.querySelector('canvas')
+const pixelResTotal = canvas.width * canvas.height
+const ctx = canvas.getContext('2d')
 
-    CANVAS.toRevertPreview = []
+CANVAS.w = canvas.width
+CANVAS.h = canvas.height
+CANVAS.buffer = new ImageData(CANVAS.w, CANVAS.h)
+
+// canvas final draw buffer
+const buf = new ArrayBuffer(CANVAS.buffer.data.length);
+const buf8 = new Uint8ClampedArray(buf);
+const buf32 = new Uint32Array(buf);
+
+// canvas layer/pixel buffer
+const CURR_FRAME = new Uint8Array(pixelResTotal * 36)
+
+// canvas preview buffer
+const emptyPrevBuffer = new Int16Array(pixelResTotal)
+const previewBuffer = new Int16Array(pixelResTotal)
+
+// canvas selection buffer
+const emptySelBuffer = new Int16Array(pixelResTotal * 3)
+const selectionBuffer = new Int16Array(pixelResTotal * 3)
+
+function canvasSetPixel(pixelIndex, colorIndex) {
+  const offset = pixelIndex * 36
+  CURR_FRAME[offset + $.layerActive] = colorIndex
+  if (colorIndex === 0) {
+    CURR_FRAME[offset + 32 + (~~($.layerActive / 8))] &= ~(128 >> ($.layerActive & 7))
+  } else {
+    CURR_FRAME[offset + 32 + (~~($.layerActive / 8))] |= (128 >> ($.layerActive & 7))
+  }
+}
+
+function setSelectedPoint (x, y) {
+  const pixI = x + CANVAS.w * y
+  const color = CURR_FRAME[(pixI * 36) + $.layerActive]
+
+  canvasSetPixel(pixI, 0)
+
+  const index = pixI * 3
+  selectionBuffer[index] = color
+  selectionBuffer[index + 1] = x
+  selectionBuffer[index + 2] = y
+}
+
+function setPreviewPoint (x, y, color) {
+  const index = (~~(x) + CANVAS.w * ~~(y))
+  previewBuffer[index] = color
+}
+
+function setCanvasPoint (x, y, color) {
+  const index = (~~(x)) + CANVAS.w * (~~(y))
+  canvasSetPixel(index, color)
+}
+
+function line (action, start, end, color) {
+  previewBuffer.set(emptyPrevBuffer)
+
+  let dx = Math.abs(end.x - start.x)
+  let dy = Math.abs(end.y - start.y)
+
+  let xDir = end.x - start.x >= 0 ? 1 : -1
+  let yDir = end.y - start.y >= 0 ? 1 : -1
+
+  let i = 0
+  let lineX = start.x
+  let lineY = start.y
+
+  let xStep = 0
+  let yStep = 0
+
+  let step = dx >= dy ? dx : dy
+
+  dx = dx / step
+  dy = dy / step
+
+  while (i < step) {
+    if (action === 'preview') setPreviewPoint(Math.floor(lineX), Math.floor(lineY), color)
+    if (action === 'print') setCanvasPoint(Math.floor(lineX), Math.floor(lineY), color)
+
+    lineX += (dx * xDir)
+    lineY += (dy * yDir)
+    i += 1
   }
 
-  // If we're printing, we can empty the last frame's pixel states and write the new ones
-  if (action === 'print') CANVAS.toRevertPreview = []
+  if (action === 'preview') setPreviewPoint(end.x, end.y, color)
+  if (action === 'print') setCanvasPoint(end.x, end.y, color)
+}
+function square (action, start, end, color) {
+  previewBuffer.set(emptyPrevBuffer)
 
-  pts.forEach(pt => {
-    const pixelIndex = pt.x + CANVAS.w * pt.y
+  let points = []
 
-    // If in preview mode, push to an array of previous pixel states to revert to on next frame
+  let dx = Math.abs(end.x - start.x)
+  let dy = Math.abs(end.y - start.y)
+
+  let xDir = end.x - start.x >= 0 ? 1 : -1
+  let yDir = end.y - start.y >= 0 ? 1 : -1
+
+  let i = 0
+  let lineX = start.x
+  let lineY = start.y
+
+  if (action === 'preview') setPreviewPoint(start.x, start.y, color)
+  if (action === 'print') setCanvasPoint(start.x, start.y, color)
+
+  while (i < dx) {
+    lineX += (1 * xDir)
     if (action === 'preview') {
-      let color = CURR_FRAME[(pixOffsets[pixelIndex]) + layerIndex]
+      setPreviewPoint(lineX, start.y, color)
+      setPreviewPoint(lineX, (start.y + (dy * yDir)), color)
+    }
+    if (action === 'print') {
+      setCanvasPoint(lineX, start.y, color)
+      setCanvasPoint(lineX, (start.y + (dy * yDir)), color)
+    }
+    i += 1
+  }
 
-      CANVAS.toRevertPreview.push({
-        pixelIndex: pixelIndex,
-        layerIndex: layerIndex,
-        colorIndex: color
-      })
+  i = 0
+
+  while (i < dy) {
+    lineY += (1 * yDir)
+    if (action === 'preview') {
+      setPreviewPoint(start.x, lineY, color)
+      setPreviewPoint((start.x + (dx * xDir)), lineY, color)
+    }
+    if (action === 'print') {
+      setCanvasPoint(start.x, lineY, color)
+      setCanvasPoint((start.x + (dx * xDir)), lineY, color)
+    }
+    i += 1
+  }
+}
+function squareFilled (action, start, end, color) {
+  //
+  previewBuffer.set(emptyPrevBuffer)
+
+  let dx = Math.abs(end.x - start.x)
+  let dy = Math.abs(end.y - start.y)
+
+  let xDir = end.x - start.x >= 0 ? 1 : -1
+  let yDir = end.y - start.y >= 0 ? 1 : -1
+
+  let lineX = start.x
+  let lineY = start.y
+
+  let xStep = 0
+  let yStep = 0
+
+  while (xStep <= dx) {
+    yStep = 0
+    lineY = start.y
+
+    while (yStep <= dy) {
+      if (action === 'preview') setPreviewPoint(lineX, lineY, color)
+      if (action === 'print') setCanvasPoint(lineX, lineY, color)
+
+      lineY += (1 * yDir)
+      yStep += 1
     }
 
-    canvasPaintPixel(pixelIndex, layerIndex, colorIndex)
-  })
+    lineX += (1 * xDir)
+    xStep += 1
+  }
+}
+function selectionLift (start, end) {
+  // lift to selection buffer
+  previewBuffer.set(emptyPrevBuffer)
+
+  let dx = Math.abs(end.x - start.x)
+  let dy = Math.abs(end.y - start.y)
+
+  let xDir = end.x - start.x >= 0 ? 1 : -1
+  let yDir = end.y - start.y >= 0 ? 1 : -1
+
+  let lineX = start.x
+  let lineY = start.y
+
+  let xStep = 0
+  let yStep = 0
+
+  while (xStep <= dx) {
+    yStep = 0
+    lineY = start.y
+
+    while (yStep <= dy) {
+      setSelectedPoint(lineX, lineY)
+
+      lineY += (1 * yDir)
+      yStep += 1
+    }
+
+    lineX += (1 * xDir)
+    xStep += 1
+  }
+}
+
+// translate selection buffer, write to preview buffer
+function selectionTranslate (xStep, yStep) {
+  previewBuffer.set(emptyPrevBuffer)
+
+  for (let pixI = 0, idx = 0; pixI < pixelResTotal; pixI++, idx += 3) {
+    selectionBuffer[idx + 1] += xStep
+    selectionBuffer[idx + 2] += yStep
+
+    const x = selectionBuffer[idx + 1]
+    const y = selectionBuffer[idx + 2]
+
+    if (x >= 0 && x < CANVAS.w && y >= 0 && y < CANVAS.h) {
+      setPreviewPoint (x, y, selectionBuffer[idx])
+    }
+  }
+}
+
+function selectionWrite () {
+  previewBuffer.set(emptyPrevBuffer)
+
+  for (let pixI = 0, idx = 0; pixI < pixelResTotal; pixI++, idx += 3) {
+    const c = selectionBuffer[idx]
+    const x = selectionBuffer[idx + 1]
+    const y = selectionBuffer[idx + 2]
+
+    if (x >= 0 && x < CANVAS.w && y >= 0 && y < CANVAS.h) {
+      setCanvasPoint (x, y, c)
+    }
+  }
 }
 
 function canvasPaint (e) {
@@ -153,60 +418,53 @@ function canvasPaint (e) {
     CANVAS.mouseDown = false
   }
 
-  if ($.toolActive === 'pencil') {
+  if ($.toolActive === 'pencil' || $.toolActive === 'eraser') {
+    const color = $.toolActive === 'pencil' ? $.colorActive : 0
+
     if (CANVAS.mouseDown) {
       make('line', CANVAS.prev, CANVAS.curr).forEach(pt => {
         const pixelIndex = pt.x + CANVAS.w * pt.y
-        canvasPaintPixel(pixelIndex, $.layerActive, $.colorActive)
+        canvasSetPixel(pixelIndex, color)
       })
     }
   }
 
-  if ($.toolActive === 'line') {
+  if ($.toolActive === 'line' || $.toolActive === 'square' || $.toolActive === 'circle' ) {
+    let distance = 0
+
+    if ($.toolActive === 'circle') {
+      distance = dist(CANVAS.start.x, CANVAS.end.x, CANVAS.start.y, CANVAS.end.y)
+    }
+
     if (CANVAS.mouseDown) {
-      const line = make('line', CANVAS.start, CANVAS.prev)
-      canvasPreview('preview', line, $.layerActive, $.colorActive)
+      if ($.toolActive === 'line') line('preview', CANVAS.start, CANVAS.end, $.colorActive)
+      if ($.toolActive === 'square') square('preview', CANVAS.start, CANVAS.end, $.colorActive)
     }
 
     if (e.type === 'mouseup') {
-      const line = make('line', CANVAS.start, CANVAS.prev)
-      canvasPreview('print', line, $.layerActive, $.colorActive)
+      if ($.toolActive === 'line') line('print', CANVAS.start, CANVAS.end, $.colorActive)
+      if ($.toolActive === 'square') square('print', CANVAS.start, CANVAS.end, $.colorActive)
     }
   }
+
+  if ($.toolActive === 'move') {
+    const xStep = CANVAS.end.x - CANVAS.prev.x
+    const yStep = CANVAS.end.y - CANVAS.prev.y
+
+    if (e.type === 'mousedown') {
+      selectionLift({ x: 0, y: 0 }, { x: CANVAS.w - 1, y: CANVAS.h - 1 })
+    }
+
+    if (CANVAS.mouseDown) selectionTranslate(xStep, yStep)
+
+    if (e.type === 'mouseup') selectionWrite()
+  }
 }
+function canvasGetTopColor (pixelIndex) {
+  let index = 0, v
+  const offset = pixelIndex * 36
 
-// INIT CANVAS
-const canvas = document.querySelector('canvas')
-const length = canvas.width * canvas.height
-const ctx = canvas.getContext('2d')
-
-CANVAS.w = canvas.width
-CANVAS.h = canvas.height
-CANVAS.buffer = new ImageData(CANVAS.w, CANVAS.h)
-
-const pixelResTotal = CANVAS.w * CANVAS.h
-
-const FRAMES = []
-$.frameActive = 0
-
-// first 32 bytes: array into COLORS table
-// last 4 bytes: array into first 32 bytes
-FRAMES[$.frameActive] = new Uint8Array(pixelResTotal * 36)
-
-const CURR_FRAME = FRAMES[$.frameActive]
-
-const pixOffsets = new Uint32Array(pixelResTotal)
-for (let i = 0; i < pixelResTotal; i++) {
-  pixOffsets[i] = i * 36
-}
-
-function getFirstVisibleLayerIndex (pixelIndex) {
-  //console.time('draw loop get visible')
-
-  let index = -1, v
-  const offset = pixOffsets[pixelIndex]
-
-  if (CURR_FRAME[offset + 32] > 0) {
+  if (CURR_FRAME[offset + 32] !== 0) {
     v = CURR_FRAME[offset + 32]|0 // make sure its an integer
     index = 0
   } else if (CURR_FRAME[offset + 33] > 0) {
@@ -220,16 +478,17 @@ function getFirstVisibleLayerIndex (pixelIndex) {
     index = 24
   }
 
-  if ((v & 128) !== 0) index += 0 // to set the first bit: v |= 128, CURR_FRAME[0] = colorIndex
-  else if ((v & 64) !== 0) index += 1 // to set the second: v |= 64, CURR_FRAME[1] = colorIndex
-  else if ((v & 32) !== 0) index += 2
-  else if ((v & 16) !== 0) index += 3
-  else if ((v & 8) !== 0) index += 4
-  else if ((v & 4) !== 0) index += 5
-  else if ((v & 2) !== 0) index += 6
-  else if ((v & 1) !== 0) index += 7
-
-  //console.timeEnd('draw loop get visible')
+  if ((v >> 4) !== 0) {
+    if ((v & 128) !== 0) index += 0 // to set the first bit: v |= 128, CURR_FRAME[0] = colorIndex
+    else if ((v & 64) !== 0) index += 1 // to set the second: v |= 64, CURR_FRAME[1] = colorIndex
+    else if ((v & 32) !== 0) index += 2
+    else if ((v & 16) !== 0) index += 3
+  } else {
+    if ((v & 8) !== 0) index += 4
+    else if ((v & 4) !== 0) index += 5
+    else if ((v & 2) !== 0) index += 6
+    else if ((v & 1) !== 0) index += 7
+  }
 
   if (index !== -1) {
     return index
@@ -237,17 +496,12 @@ function getFirstVisibleLayerIndex (pixelIndex) {
     return 0
   }
 }
-
-function canvasPaintPixel(pixelIndex, layerIndex, colorIndex) {
-  const offset = pixOffsets[pixelIndex]
-  CURR_FRAME[offset + layerIndex] = colorIndex
-  CURR_FRAME[offset + 32 + (~~(layerIndex / 8))] |= (128 >> (layerIndex % 8))
-}
-
-// Draw final frame buffer
 function canvasDraw () {
   let toggle = 0
+  let previewColorIndex = 0
+  let colorIndex = 0
 
+  // Draw final frame buffer
   function draw () {
     toggle = toggle === 0 ? 1 : 0
 
@@ -257,20 +511,26 @@ function canvasDraw () {
     }
 
     //console.time('draw loop')
-    for (let pixI = 0; pixI < pixelResTotal; pixI++) {
-      const bufI = pixI * 4 // calc pixel operation offset
+    for (let pixI = 0, idx = 0; pixI < pixelResTotal; pixI++, idx+=36) {
+      colorIndex = CURR_FRAME[idx + canvasGetTopColor(pixI)] // step 1: grab index of first visible layer
+      previewColorIndex = previewBuffer[pixI]
 
-      // step 1: grab index of first visible layer
-      let colorIndex = CURR_FRAME[pixOffsets[pixI] + getFirstVisibleLayerIndex(pixI)]
+      buf32[pixI] =
+       (COLORS[colorIndex + 3] << 24) |    // alpha
+       (COLORS[colorIndex + 2] << 16) |    // blue
+       (COLORS[colorIndex + 1] <<  8) |    // green
+        COLORS[colorIndex];
 
-      // step 2: grab color index from first 32 bytes
-      // step 3: grab color value from COLORS
-      CANVAS.buffer.data[bufI] = COLORS[colorIndex]
-      CANVAS.buffer.data[bufI + 1] = COLORS[colorIndex + 1]
-      CANVAS.buffer.data[bufI + 2] = COLORS[colorIndex + 2]
-      CANVAS.buffer.data[bufI + 3] = COLORS[colorIndex + 3]
+      if (previewColorIndex !== 0) {
+        buf32[pixI] =
+         (COLORS[previewColorIndex + 3] << 24) |    // alpha
+         (COLORS[previewColorIndex + 2] << 16) |    // blue
+         (COLORS[previewColorIndex + 1] <<  8) |    // green
+          COLORS[previewColorIndex];
+      }
     }
     //console.timeEnd('draw loop')
+    CANVAS.buffer.data.set(buf8);
     ctx.putImageData(CANVAS.buffer, 0, 0)
 
     requestAnimationFrame(draw)
@@ -282,7 +542,5 @@ function canvasDraw () {
 function main () {
   canvasDraw()
 }
-
-
 
 main()

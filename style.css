@@ -42,8 +42,7 @@ button:hover {
 }
 
 button.hover:hover {
-  background: rgba(110,110,110);
-  border-radius: 2px;
+  background: rgba(110,110,110)
 }
 
 small {
@@ -131,17 +130,24 @@ canvas {
 
 .colors-btn.active {
   box-shadow: inset 0px 0px 0px 2px #3498db, inset 0px 0px 0px 4px rgb(50, 50, 50);
-  border-radius: 2px;
 }
 
 .colors-btn {
   box-shadow: inset 0px 0px 0px 2px rgb(61, 61, 61), inset 0px 0px 0px 4px rgb(50, 50, 50);
 }
 
+.tools-btn {
+  border-radius: 2px;
+  padding: 2px;
+}
 .tools-btn.active {
   background: #3498db;
   box-shadow: inset 0px 0px 0px 2px #3498db;
-  border-radius: 2px;
+}
+
+.active {
+  background: #3498db;
+  box-shadow: inset 0px 0px 0px 2px #3498db;
 }
 
 .stop-active > :nth-child(1) { display: none; }
@@ -158,4 +164,16 @@ canvas {
 
 ::-webkit-scrollbar-thumb {
   background-color: rgba(70,70,70);
+}
+
+.visible {
+  display: default;
+}
+
+#modal:not(.visible) {
+  display: none;
+}
+
+#modal > :not(.visible) {
+  display: none;
 }

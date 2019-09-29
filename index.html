@@ -6,32 +6,187 @@
   <link rel="stylesheet" type="text/css" href="https://www.mongodb.com/css/mongodb-framework.css">
 <script defer="true" src="https://use.fontawesome.com/releases/v5.6.1/js/all.js" integrity="sha384-R5JkiUweZpJjELPWqttAYmYM1P3SNEJRM6ecTQF05pFFtxmCO+Y1CiUhvuDzgSVZ" crossorigin="anonymous"></script><link rel="stylesheet" href="./style.css">
 </head>
-<body>
-  <div>
-    <button onclick="toggleActiveTool(event)" class="w-full h-30 w-30 tools-btn hover active" data-tool="pencil">
-      <img src="img/pencil.svg" style="height: 13px; pointer-events: none;">
-    </button>
-    <button onclick="toggleActiveTool(event)" class="w-full h-30 w-30 tools-btn hover" data-tool="eraser">
-      <img src="img/eraser.svg" style="height: 13px; pointer-events: none;">
-    </button>
-    <button onclick="toggleActiveTool(event)" class="w-full h-30 w-30 tools-btn hover" data-tool="line">
-      <img src="img/line.svg" style="height: 13px; pointer-events: none;">
-    </button>
-    <button onclick="toggleActiveTool(event)" class="w-full h-30 w-30 tools-btn hover" data-tool="square">
-      <img src="img/square.svg" style="height: 13px; pointer-events: none;">
-    </button>
-    <button onclick="toggleActiveTool(event)" class="w-full h-30 w-30 tools-btn hover" data-tool="circle">
-      <img src="img/circle.svg" style="height: 13px; pointer-events: none;">
-    </button>
-    <button onclick="toggleActiveTool(event)" class="w-full h-30 w-30 tools-btn hover" data-tool="select">
-      <img src="img/select.svg" style="height: 13px; pointer-events: none;">
-    </button>
-    <button onclick="toggleActiveTool(event)" class="w-full h-30 w-30 tools-btn hover" data-tool="move">
-      <img src="img/move.svg" style="height: 13px; pointer-events: none;">
-    </button>
+<body class='fl-column' style='height: 100vh;'>
+  <div class='h-min-35 bg-light bord-dark-b fl'>
+    <div class='fl-1 fl fl-justify-between'>
+      <div class='w-170 p-h-15 fl fl-center'>
+        <small></small>
+      </div>
+      <div class='fl-1 fl'>
+        <button class='w-55 bord-dark-l bord-dark-r' onclick='modalOpen(event)' data-val='create' style='font-size: 16px;'>
+          <i class="fas fa-folder-plus" style='pointer-events: none;'></i>
+        </button>
+      </div>
+      <div class='fl-1 fl fl-justify-center'>
+        <!-- <button class='w-55 bord-dark-h' onclick='historyUndo()'><i class="fas fa-undo"></i></button> -->
+        <!-- <button class='w-55 bord-dark-r' onclick='historyRedo()'><i class="fas fa-redo"></i></button> -->
+        <!-- <button class='w-55 bord-dark-r' onclick='historyRedo()'><i class="fas fa-arrows-alt"></i></button> -->
+      </div>
+      <div class='fl-1 fl fl-justify-end'>
+        <a id="download" download="pixelart.png" class='h-full' style='display: inline-block;'>
+          <button class='w-60 bord-dark-l h-full' onclick='download()' style='font-size: 16px;'>
+            <i class="fas fa-file-download"></i>
+          </button>
+        </a>
+      </div>
+    </div>
   </div>
+  <div class='fl-1 fl' style='height: calc(100% - 35px - 35px - 176px);'>
+    <div class='bg-light'>
+      <div class='bg-light fl p-h-10 p-v-5 fl-wrap bg-mid bord-dark-b'><small>Tools</small></div>
+      <div id='tools' class='fl fl-justify-around w-170 fl-wrap p-5'>
+        <button onclick="setToolActive(event)" class="w-30 h-30 tools-btn hover active" data-tool="pencil">
+          <img src="img/pencil.svg" style="height: 13px; width: 13px; pointer-events: none;">
+        </button>
+        <button onclick="setToolActive(event)" class="w-30 h-30 tools-btn hover" data-tool="eraser">
+          <img src="img/eraser.svg" style="height: 13px; width: 13px; pointer-events: none;">
+        </button>
+        <button onclick="setToolActive(event)" class="w-30 h-30 tools-btn hover" data-tool="line">
+          <img src="img/line.svg" style="height: 13px; width: 13px; pointer-events: none;">
+        </button>
+        <button onclick="setToolActive(event)" class="w-30 h-30 tools-btn hover" data-tool="square">
+          <img src="img/square.svg" style="height: 13px; width: 13px; pointer-events: none;">
+        </button>
+        <button onclick="setToolActive(event)" class="w-30 h-30 tools-btn hover" data-tool="circle">
+          <img src="img/circle.svg" style="height: 13px; width: 13px; pointer-events: none;">
+        </button>
+        <button onclick="setToolActive(event)" class="w-30 h-30 tools-btn hover" data-tool="select">
+          <img src="img/select.svg" style="height: 13px; width: 13px; pointer-events: none;">
+        </button>
+        <button onclick="setToolActive(event)" class="w-30 h-30 tools-btn hover" data-tool="move">
+          <img src="img/move.svg" style="height: 13px; width: 13px; pointer-events: none;">
+        </button>
+        <button onclick="setToolActive(event)" class="w-30 h-30 tools-btn hover" data-tool="move" style='pointer-events: none;'>
 
-  <canvas id='main-canvas' width='500' height='500' style='width: 500px; height: 500px; background: #333;' />
+        </button>
+        <button onclick="setToolActive(event)" class="w-30 h-30 tools-btn hover" data-tool="move" style='pointer-events: none;'>
+
+        </button>
+        <button onclick="setToolActive(event)" class="w-30 h-30 tools-btn hover" data-tool="move" style='pointer-events: none;'>
+
+        </button>
+
+      </div>
+      <div class='bg-light fl p-h-10 p-v-5 fl-wrap bg-mid bord-dark-b'><small>Colors</small></div>
+      <div class='bg-light'>
+        <button class="active" onclick="setColorActive(event)" data-colorindex="20">Green</button>
+        <button class="" onclick="setColorActive(event)" data-colorindex="28">Blue</button>
+        <button class="" onclick="setColorActive(event)" data-colorindex="36">Red</button>
+      </div>
+    </div>
+    <div class='fl-column' style='width: calc(100% - 170px);'>
+      <div class='p-20 h-full' style='overflow: scroll;'>
+        <div id='canvas-container' class='relative'>
+          <canvas id='bg-canvas' style='position: absolute; top: 0; left: 0; z-index: 0;'></canvas>
+          <canvas id='main-canvas' style='position: absolute; top: 0; left: 0; z-index: 5;'></canvas>
+        </div>
+      </div>
+      <div class='bg-light fl h-30 bord-dark-l bord-dark-r p-h-10'>
+        <div class='fl-1'></div>
+        <div class='fl-1 fl fl-justify-center w-max-180'>
+          <button onclick='prevFrame()'><img src="img/lastframe.svg" style="height: 13px; pointer-events: none;"></button>
+          <button id='play-pause' class='play-active' onclick='togglePlay()'></button>
+          <button onclick='nextFrame()'><img src="img/nextframe.svg" style="height: 13px; pointer-events: none;"></button>
+        </div>
+        <div class='fl-1 fl fl-justify-end'>
+          <button onclick='canvasZoomIn()' style='font-size: 14px;'>
+            <i class="fas fa-search-plus"></i>
+          </button>
+          <button onclick='canvasZoomOut()' style='font-size: 14px;'>
+            <i class="fas fa-search-minus"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class='bg-light bord-dark-t'>
+    <div class='h-30 fl'>
+      <div class='fl fl-justify-between w-170 p-l-10 bg-mid bord-dark-b'>
+        <div class='fl fl-center-y'>
+          <small>Timeline</small>
+        </div>
+        <div class='fl'>
+          <button class='bg-light bord-dark-l' onclick='newLayer()'>
+            <i class="fas fa-plus"></i>
+          </button>
+
+          <!-- <button class='bg-light' onclick='newFrame()'>
+            <i class="fas fa-video"></i>
+          </button> -->
+          <!-- <button onclick='newLayer()'>+ L</button> -->
+        </div>
+      </div>
+      <div id='tl-frames' class='hide-scrbar fl-1 fl bord-dark-l' style='overflow: scroll;'>
+        <canvas id='tl-frames-canvas' />
+      </div>
+    </div>
+    <div class='fl-1 h-180 fl'>
+      <div id='tl-layers' class='hide-scrbar w-min-170 p-b-30' style='overflow: scroll;'>
+        <!-- <canvas class='m-b-15' id='tl-layers-canvas' /> -->
+        <div data-layerindex="26" class="fl h-25 bg-light" style="display: flex; box-shadow: none;">
+          <button data-i="26"><img src="img/eye-active.svg" data-name="eye" style="pointer-events: none;"></button>
+          <button data-i="26"><img src="img/unlock.svg" data-name="lock" style="pointer-events: none;"></button>
+          <button data-i="26" onclick="setLayerActive(event)" data-type="name" style="text-align: left;" class="w-full" text="No Name">Layer</button>
+        </div>
+        <div data-layerindex="27" class="fl h-25 bg-light" style="display: flex; box-shadow: none;">
+          <button data-i="27"><img src="img/eye-active.svg" data-name="eye" style="pointer-events: none;"></button>
+          <button data-i="27"><img src="img/unlock.svg" data-name="lock" style="pointer-events: none;"></button>
+          <button data-i="27" onclick="setLayerActive(event)" data-type="name" style="text-align: left;" class="w-full" text="No Name">Layer</button>
+        </div>
+        <div data-layerindex="28" class="fl h-25 bg-light" style="display: flex; box-shadow: none;">
+          <button data-i="28"><img src="img/eye-active.svg" data-name="eye" style="pointer-events: none;"></button>
+          <button data-i="28"><img src="img/unlock.svg" data-name="lock" style="pointer-events: none;"></button>
+          <button data-i="28" onclick="setLayerActive(event)" data-type="name" style="text-align: left;" class="w-full" text="No Name">Layer</button>
+        </div>
+        <div data-layerindex="29" class="fl h-25 bg-light" style="display: flex; box-shadow: none;">
+          <button data-i="29"><img src="img/eye-active.svg" data-name="eye" style="pointer-events: none;"></button>
+          <button data-i="29"><img src="img/unlock.svg" data-name="lock" style="pointer-events: none;"></button>
+          <button data-i="29" onclick="setLayerActive(event)" data-type="name" style="text-align: left;" class="w-full" text="No Name">Layer</button>
+        </div>
+        <div data-layerindex="30" class="fl h-25 bg-light" style="display: flex; box-shadow: none;">
+          <button data-i="30"><img src="img/eye-active.svg" data-name="eye" style="pointer-events: none;"></button>
+          <button data-i="30"><img src="img/unlock.svg" data-name="lock" style="pointer-events: none;"></button>
+          <button data-i="30" onclick="setLayerActive(event)" data-type="name" style="text-align: left;" class="w-full" text="No Name">Layer</button>
+        </div>
+        <div data-layerindex="31" class="fl h-25 bg-light active" style="display: flex; box-shadow: none;">
+          <button data-i="31"><img src="img/eye-active.svg" data-name="eye" style="pointer-events: none;"></button>
+          <button data-i="31"><img src="img/unlock.svg" data-name="lock" style="pointer-events: none;"></button>
+          <button data-i="31" onclick="setLayerActive(event)" data-type="name" style="text-align: left;" class="w-full" text="No Name">Layer</button>
+        </div>
+
+      </div>
+      <div id='tl-cells' class='fl-1 bg-dark bord-dark-l' style='overflow: scroll;'>
+        <canvas class='m-b-15 clickable' id='tl-cells-canvas' />
+      </div>
+    </div>
+  </div>
+  <div id='modal' class='relative w-full h-full fl-center' style="position: absolute; top: 0; left: 0;">
+    <div id='create' class='bg-light' style='border-radius: 3px; overflow: hidden; border: 1px solid rgb(33, 33, 33); z-index: 5;'>
+      <small class='fl-center m-0 bg-mid bord-dark-b p-v-5'>New Canvas</small>
+      <div id='create-config' class='p-20'>
+        <div class='p-b-10 fl-center'>
+          <div class='m-r-5 w-90'><small>Dimensions:</small></div>
+          <div class='fl-1'>
+            <input class='w-full w-max-80'type='text' class='w-100' id='create-w' />
+            <small class='m-h-5'>X</small>
+            <input class='w-full w-max-80'type='text' class='w-100' id='create-h' />
+          </div>
+        </div>
+        <div class='p-b-20 fl-center'>
+          <div class='m-r-5 w-90'><small>Palette:</small></div>
+          <div class='select fl-1'>
+            <select class='w-full' style='display: inline;'>
+              <option>test</option>
+            </select>
+          </div>
+        </div>
+        <div class='fl'>
+          <button class='bord-r-2 bg-red w-full m-r-10' onclick='modalClose(event)' data-val='create'>Cancel</button>
+          <button class='bord-r-2 bg-green w-full' onclick='canvasInit()'>Create</button>
+        </div>
+      </div>
+    </div>
+  </div>
   <script src="./script.js"></script>
 </body>
 </html>

@@ -31,7 +31,7 @@
       </div>
     </div>
   </div>
-  <div class='fl-1 fl' style='height: calc(100% - 35px - 35px - 176px);'>
+  <div class='fl-1 fl' style='height: calc(100% - 35px - 35px - 30px - 176px);'>
     <div class='bg-light'>
       <div class='bg-light fl p-h-10 p-v-5 fl-wrap bg-mid bord-dark-b'><small>Tools</small></div>
       <div id='tools' class='fl fl-justify-around w-170 fl-wrap p-5'>
@@ -67,11 +67,11 @@
         </button>
 
       </div>
-      <div class='bg-light fl p-h-10 p-v-5 fl-wrap bg-mid bord-dark-b'><small>Colors</small></div>
-      <div class='bg-light'>
-        <button class="active" onclick="setColorActive(event)" data-colorindex="20">Green</button>
-        <button class="" onclick="setColorActive(event)" data-colorindex="28">Blue</button>
-        <button class="" onclick="setColorActive(event)" data-colorindex="36">Red</button>
+      <div class='bg-light fl p-h-10 p-v-5 fl-wrap bg-mid bord-dark-b bord-dark-t'><small>Colors</small></div>
+      <div class='bg-light p-5 fl'>
+        <button class="fl-1 p-5 tools-btn active" onclick="setColorActive(event)" data-colorindex="20">Green</button>
+        <button class="fl-1 p-5 tools-btn " onclick="setColorActive(event)" data-colorindex="28">Blue</button>
+        <button class="fl-1 p-5 tools-btn " onclick="setColorActive(event)" data-colorindex="36">Red</button>
       </div>
     </div>
     <div class='fl-column' style='width: calc(100% - 170px);'>
@@ -81,8 +81,12 @@
           <canvas id='main-canvas' style='position: absolute; top: 0; left: 0; z-index: 5;'></canvas>
         </div>
       </div>
-      <div class='bg-light fl h-30 bord-dark-l bord-dark-r p-h-10'>
-        <div class='fl-1'></div>
+      <div class='bg-light fl h-30 bord-dark-l bord-dark-r'>
+        <div class='fl-1 fl'>
+          <!-- <div class='fl fl-center-y  p-h-10'>
+            <small>Timeline</small>
+          </div> -->
+        </div>
         <div class='fl-1 fl fl-justify-center w-max-180'>
           <button onclick='prevFrame()'><img src="img/lastframe.svg" style="height: 13px; pointer-events: none;"></button>
           <button id='play-pause' class='play-active' onclick='togglePlay()'></button>
@@ -99,23 +103,53 @@
       </div>
     </div>
   </div>
-  <div class='bg-light bord-dark-t'>
+  <div class='fl bg-light bord-dark-t bord-dark-b h-30'>
+    <div class='w-170 fl'>
+      <div class='fl fl-center-y bg-mid p-h-10 fl-1'>
+        <small>Layers</small>
+      </div>
+      <div class='fl'>
+        <button class='bg-light bord-dark-l' onclick='layersRemove(event)'>
+          <i style="pointer-events: none; " class="fas fa-trash"></i>
+        </button>
+        <button class='bg-light bord-dark-l' onclick='layersAdd()'>
+          <i style="pointer-events: none; " class="fas fa-plus"></i>
+        </button>
+        <!-- <button onclick='newLayer()'>+ L</button> -->
+      </div>
+    </div>
+    <div class='w-170 fl'>
+      <div class='fl fl-center-y bg-mid p-h-10 fl-1 bord-dark-l'>
+        <small>Timeline</small>
+      </div>
+      <div class='fl'>
+        <button class='bg-light bord-dark-l' onclick='layersRemove(event)'>
+          <i style="pointer-events: none; " class="fas fa-trash"></i>
+        </button>
+        <button class='bg-light bord-dark-l' onclick='layersAdd()'>
+          <i style="pointer-events: none; " class="fas fa-plus"></i>
+        </button>
+        <!-- <button onclick='newLayer()'>+ L</button> -->
+      </div>
+    </div>
+  </div>
+  <div class='bg-light'>
     <div class='h-30 fl'>
-      <div class='fl fl-justify-between w-170 p-l-10 bg-mid bord-dark-b'>
+      <!-- <div class='fl fl-justify-between w-170 p-l-10 bg-mid bord-dark-b'>
         <div class='fl fl-center-y'>
-          <small>Timeline</small>
+          <small>Layers</small>
         </div>
         <div class='fl'>
-          <button class='bg-light bord-dark-l' onclick='newLayer()'>
-            <i class="fas fa-plus"></i>
+          <button class='bg-light bord-dark-l' onclick='layersRemove(event)'>
+            <i style="pointer-events: none; " class="fas fa-trash"></i>
           </button>
-
-          <!-- <button class='bg-light' onclick='newFrame()'>
-            <i class="fas fa-video"></i>
-          </button> -->
-          <!-- <button onclick='newLayer()'>+ L</button> -->
+          <button class='bg-light bord-dark-l' onclick='layersAdd()'>
+            <i style="pointer-events: none; " class="fas fa-plus"></i>
+          </button>
+          <button onclick='newLayer()'>+ L</button>
         </div>
-      </div>
+
+      </div> -->
       <div id='tl-frames' class='hide-scrbar fl-1 fl bord-dark-l' style='overflow: scroll;'>
         <canvas id='tl-frames-canvas' />
       </div>
@@ -123,35 +157,14 @@
     <div class='fl-1 h-180 fl'>
       <div id='tl-layers' class='hide-scrbar w-min-170 p-b-30' style='overflow: scroll;'>
         <!-- <canvas class='m-b-15' id='tl-layers-canvas' /> -->
-        <div data-layerindex="26" class="fl h-25 bg-light" style="display: flex; box-shadow: none;">
-          <button data-i="26"><img src="img/eye-active.svg" data-name="eye" style="pointer-events: none;"></button>
-          <button data-i="26"><img src="img/unlock.svg" data-name="lock" style="pointer-events: none;"></button>
-          <button data-i="26" onclick="setLayerActive(event)" data-type="name" style="text-align: left;" class="w-full" text="No Name">Layer</button>
-        </div>
-        <div data-layerindex="27" class="fl h-25 bg-light" style="display: flex; box-shadow: none;">
-          <button data-i="27"><img src="img/eye-active.svg" data-name="eye" style="pointer-events: none;"></button>
-          <button data-i="27"><img src="img/unlock.svg" data-name="lock" style="pointer-events: none;"></button>
-          <button data-i="27" onclick="setLayerActive(event)" data-type="name" style="text-align: left;" class="w-full" text="No Name">Layer</button>
-        </div>
-        <div data-layerindex="28" class="fl h-25 bg-light" style="display: flex; box-shadow: none;">
-          <button data-i="28"><img src="img/eye-active.svg" data-name="eye" style="pointer-events: none;"></button>
-          <button data-i="28"><img src="img/unlock.svg" data-name="lock" style="pointer-events: none;"></button>
-          <button data-i="28" onclick="setLayerActive(event)" data-type="name" style="text-align: left;" class="w-full" text="No Name">Layer</button>
-        </div>
-        <div data-layerindex="29" class="fl h-25 bg-light" style="display: flex; box-shadow: none;">
-          <button data-i="29"><img src="img/eye-active.svg" data-name="eye" style="pointer-events: none;"></button>
-          <button data-i="29"><img src="img/unlock.svg" data-name="lock" style="pointer-events: none;"></button>
-          <button data-i="29" onclick="setLayerActive(event)" data-type="name" style="text-align: left;" class="w-full" text="No Name">Layer</button>
-        </div>
-        <div data-layerindex="30" class="fl h-25 bg-light" style="display: flex; box-shadow: none;">
-          <button data-i="30"><img src="img/eye-active.svg" data-name="eye" style="pointer-events: none;"></button>
-          <button data-i="30"><img src="img/unlock.svg" data-name="lock" style="pointer-events: none;"></button>
-          <button data-i="30" onclick="setLayerActive(event)" data-type="name" style="text-align: left;" class="w-full" text="No Name">Layer</button>
-        </div>
-        <div data-layerindex="31" class="fl h-25 bg-light active" style="display: flex; box-shadow: none;">
-          <button data-i="31"><img src="img/eye-active.svg" data-name="eye" style="pointer-events: none;"></button>
-          <button data-i="31"><img src="img/unlock.svg" data-name="lock" style="pointer-events: none;"></button>
-          <button data-i="31" onclick="setLayerActive(event)" data-type="name" style="text-align: left;" class="w-full" text="No Name">Layer</button>
+        <div data-layerindex="31" data-tllayers="" class="fl h-25 bg-light" style="display: flex; box-shadow: none;">
+          <button data-i="31" data-tllayers="" onclick="layersHide(event)">
+            <img src="img/eye-active.svg" data-name="hide" style="pointer-events: none;">
+          </button>
+          <button data-i="31" data-tllayers="" onclick="layersLock(event)">
+            <img src="img/unlock.svg" data-name="lock" style="pointer-events: none;">
+          </button>
+          <button data-i="31" data-tllayers="" data-name="name" style="text-align: left;" class="w-full" text="No Name">Layer 1</button>
         </div>
 
       </div>
@@ -183,6 +196,21 @@
         <div class='fl'>
           <button class='bord-r-2 bg-red w-full m-r-10' onclick='modalClose(event)' data-val='create'>Cancel</button>
           <button class='bord-r-2 bg-green w-full' onclick='canvasInit()'>Create</button>
+        </div>
+      </div>
+    </div>
+    <div id='rename' class='bg-light' style='border-radius: 3px; overflow: hidden; border: 1px solid rgb(33, 33, 33); z-index: 5;'>
+      <small class='fl-center m-0 bg-mid bord-dark-b p-v-5'>Rename Layer</small>
+      <div id='rename-config' class='p-20'>
+        <div class='p-b-20 fl-center'>
+          <div class='m-r-15'><small>Name:</small></div>
+          <div class='fl-1'>
+            <input class='w-full' type='text' id='rename-new-name' />
+          </div>
+        </div>
+        <div class='fl'>
+          <button class='bord-r-2 bg-red w-full m-r-10' onclick='modalClose(event)' data-val='rename'>Cancel</button>
+          <button class='bord-r-2 bg-green w-full' onclick='layersRename(event)'>Save</button>
         </div>
       </div>
     </div>

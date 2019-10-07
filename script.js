@@ -240,15 +240,30 @@ function blend (r1, g1, b1, r2, g2, b2) {
   }
 }
 
-let $ = {
-  FRAMES: [],
-  LAYERS: [],
-  isPlaying: 0,
-  frameActive: 0,
-  layerActive: 31,
-  colorActive: 20,
-  toolActive: 'pencil',
-  layers: [{ name: 'Layer 1', hidden: false, locked: false }]
+// canvas layer/pixel buffer
+let pixelBuffer, pixelResTotal;
+// canvas preview buffer
+let emptyPrevBuffer, previewBuffer;
+// canvas selection buffer
+let emptySelBuffer, selectionBuffer;
+// canvas final draw buffer
+let buf, buf8, buf32;
+
+let CURR_FRAME
+
+let $
+
+function resetState () {
+	$ = {}
+	$ = {
+	  FRAMES: [],
+	  LAYERS: [],
+	  isPlaying: 0,
+	  frameActive: 0,
+	  layerActive: 31,
+	  colorActive: 20,
+	  toolActive: 'pencil'
+	}
 }
 
 function setToolActive (e, tool) {
@@ -274,7 +289,6 @@ function modalClose (e, target) {
 }
 
 // INIT COLORS
-
 const APP_UTIL_COLORS = [
   0, 0, 0, 0, // empty
   75, 75, 75, 125, // selected
@@ -367,7 +381,6 @@ function openColorPicker () {
   picker.style.display = 'inline-block'
   picker.style.zIndex = '5'
 }
-
 function closeColorPicker () {
   const picker = document.querySelector('#color-picker')
   picker.style.display = 'none'
@@ -408,7 +421,6 @@ function setRGB (e) {
     updateColorPicker()
   }
 }
-
 function setHEX (e) {
   if (e.type === 'change' || e.key === 'Enter') {
     COLOR_PICKER.hex = e.target.value
@@ -422,7 +434,6 @@ function setHEX (e) {
     updateColorPicker()
   }
 }
-
 function updateColorPicker () {
   const picker = document.querySelector('#color-picker')
   picker.querySelector('#color-picker-r').value = COLOR_PICKER.r
@@ -430,7 +441,6 @@ function updateColorPicker () {
   picker.querySelector('#color-picker-b').value = COLOR_PICKER.b
   picker.querySelector('#color-picker-hex').value = COLOR_PICKER.hex
 }
-
 function initColorPicker () {
   COLOR_PICKER.r = COLOR_PAL[0]
   COLOR_PICKER.g = COLOR_PAL[1]
@@ -440,9 +450,6 @@ function initColorPicker () {
 
   updateColorPicker()
 }
-
-initColorPicker()
-
 
 CANVAS = {
   w: 0,
@@ -464,18 +471,103 @@ const canvas = document.querySelector('#main-canvas')
 const CANVAS_CONTAINER = document.querySelector('#canvas-container')
 const ctx = canvas.getContext('2d')
 
-// canvas layer/pixel buffer
-let pixelBuffer, pixelResTotal;
-// canvas preview buffer
-let emptyPrevBuffer, previewBuffer;
-// canvas selection buffer
-let emptySelBuffer, selectionBuffer;
-// canvas final draw buffer
-let buf, buf8, buf32;
+function timelineInit (total) {
+	$.FRAMES = []
 
-let CURR_FRAME
+	let i = 1
+	while (i < 50) {
+    $.FRAMES[i] = undefined
+    i += 1
+  }
+
+  $.FRAMES[0] = new Uint8Array(total * 36)
+  CURR_FRAME = $.FRAMES[0]
+
+	// Fill out layers metadata state array
+	for (let i = 0; i < 32; i++) {
+		if (i === 31) {
+			$.LAYERS[i] = { name: 'Layer 1', hidden: false, locked: false }
+		} else {
+			$.LAYERS[i] = { name: undefined, hidden: undefined, locked: undefined }
+		}
+	}
+
+	timelineUpdate()
+}
+
+function timelineUpdate () {
+	// FRAMES UPDATE
+	const frameWrapper = document.querySelector("#tl-frames")
+
+  let framesLen = framesGetLength()
+  let layersLen = layersGetLength()
+  let f = 0
+  let l = 0
+
+  FRAMES_CANVAS.style.width = `${framesLen * 30}px`
+  FRAMES_CANVAS.style.height = `${layersLen * 25}px`
+
+  FRAMES_CANVAS.width = framesLen * 60
+  FRAMES_CANVAS.height = layersLen * 50
+
+  while (f < framesLen) {
+    l = 0
+
+    frameWrapper.children[f].style.display = 'block'
+
+    while (l < layersLen) {
+      FRAMES_CTX.fillStyle = 'rgba(61, 61, 61)'
+      // Color gray to active layer row , active frame column
+      if (f === $.frameActive || l === ($.layerActive - 31 + layersLen - 1)) { // screwy math to reverse the order of the layers tracking
+        FRAMES_CTX.fillStyle = 'rgba(110, 110, 110)'
+      }
+
+      if (f === UI.curr.x && l === UI.curr.y) { // screwy math to reverse the order of the layers tracking
+        FRAMES_CTX.fillStyle = 'rgba(110, 110, 110)'
+      }
+
+      // Blue to active drawing frame
+      if (f === $.frameActive && l === ($.layerActive - 31 + layersLen - 1)) {
+        FRAMES_CTX.fillStyle = 'rgba(81, 151, 213)'
+      }
+
+      FRAMES_CTX.fillRect((f * 60) + 2, (l * 50) + 2, 60 - 2, 50 - 2)
+      l++
+    }
+    f++
+  }
+
+  while (f < 50) {
+    frameWrapper.children[f].style.display = 'none'
+    f++
+  }
+
+	// LAYERS UPDATE
+	const layerWrapper = document.querySelector("#tl-layers")
+
+	for (let i = $.LAYERS.length - 1; i >= 0 ; i--) {
+		if ($.LAYERS[i].name !== undefined && $.LAYERS[i].hidden !== undefined && $.LAYERS[i].locked !== undefined) {
+			layerWrapper.children[i].style.display = 'flex'
+
+			if ($.layerActive === i) {
+				//layerWrapper.children[i].querySelector(`[data-name="name"]`).classList.add('active')
+			} else {
+				//layerWrapper.children[i].querySelector(`[data-name="name"]`).classList.remove('active')
+			}
+
+			layerWrapper.children[i].querySelector(`[data-name="name"]`).innerText = $.LAYERS[i].name
+			layerWrapper.children[i].querySelector(`[data-name="lock"]`).src = $.LAYERS[i].locked ? 'img/lock.svg' : 'img/unlock.svg'
+			layerWrapper.children[i].querySelector(`[data-name="hide"]`).src = $.LAYERS[i].hidden ? 'img/eye.svg' : 'img/eye-active.svg'
+		} else {
+			layerWrapper.children[i].style.display = 'none'
+			//layerWrapper.children[i].querySelector(`[data-name="name"]`).classList.remove('active')
+		}
+	}
+}
 
 function canvasInit (w, h) {
+	resetState()
+
   CANVAS.w = w || parseInt(document.querySelector('#modal #create-w').value) || 0
   CANVAS.h = h || parseInt(document.querySelector('#modal #create-h').value) || 0
   CANVAS.l = CANVAS.w * CANVAS.h
@@ -494,33 +586,7 @@ function canvasInit (w, h) {
   buf8 = new Uint8ClampedArray(buf)
   buf32 = new Uint32Array(buf)
 
-
-  // Init frames
-  let i = 1
-  $.FRAMES = []
-
-  const frameTemplate = document.querySelector("#tl-frames-button")
-  const frameWrapper = document.querySelector("#tl-frames")
-
-  while (i < 50) {
-    const clone = frameTemplate.cloneNode(true)
-    clone.setAttribute('data-frameindex', i)
-    clone.style.display = 'none'
-    clone.setAttribute('data-i', i)
-    clone.innerText = i + 1
-
-    frameWrapper.appendChild(clone, frameWrapper.children[0])
-
-    $.FRAMES[i] = undefined
-    i++
-  }
-
-  $.FRAMES[0] = new Uint8Array(pixelResTotal * 36)
-
-  CURR_FRAME = $.FRAMES[0]
-
-  const canvasBG = document.querySelector('#bg-canvas')
-  const ctxBG = canvasBG.getContext('2d')
+  timelineInit(pixelResTotal)
 
   // scale the canvas to be just short of the height of the view window
   const containerHeight = parseInt(window.getComputedStyle(CANVAS_CONTAINER.parentNode).height.replace('px', '')) - 100
@@ -546,27 +612,7 @@ function canvasInit (w, h) {
   wrapper.parentNode.scrollLeft = ((CANVAS.w * CANVAS.scaleRatio) / 2) - (wrapper.parentNode.offsetWidth / 2) + 20
   wrapper.parentNode.scrollTop = ((CANVAS.h * CANVAS.scaleRatio) / 2) - (wrapper.parentNode.offsetHeight / 2) + 20
 
-  // Draw Transparency layer
-  for (let x = 0; x < CANVAS.w; x++) {
-    for (let y = 0; y < CANVAS.h; y++) {
-      if (y % 2 === 0) {
-        if (x % 2 === 0) {
-          ctxBG.fillStyle = `rgb(${COLORS[8]}, ${COLORS[8]}, ${COLORS[8]})`
-          ctxBG.fillRect(x, y, 1, 1)
-        } else {
-          ctxBG.fillStyle = `rgb(${COLORS[12]}, ${COLORS[12]}, ${COLORS[12]})`
-          ctxBG.fillRect(x, y, 1, 1)
-        }
-      } else if (x % 2 !== 0) {
-        ctxBG.fillStyle = `rgb(${COLORS[8]}, ${COLORS[8]}, ${COLORS[8]})`
-        ctxBG.fillRect(x, y, 1, 1)
-      } else {
-        ctxBG.fillStyle = `rgb(${COLORS[12]}, ${COLORS[12]}, ${COLORS[12]})`
-        ctxBG.fillRect(x, y, 1, 1)
-      }
-    }
-  }
-
+	drawTransparencyBG()
   modalClose(undefined, 'create')
 }
 
@@ -1023,38 +1069,10 @@ function layersGetLength () {
     a++
   }
 }
-function layersInit () {
-  // Insert DOM placeholders
-  const layerTemplate = document.querySelector("[data-layerindex='31']")
-  const layerWrapper = document.querySelector("#tl-layers")
-
-  for (let i = 30; i >= 0; i--) {
-    const clone = layerTemplate.cloneNode(true)
-    clone.setAttribute('data-layerindex', i)
-    clone.style.display = 'none'
-
-    for (let a = 0; a < clone.children.length; a++) {
-      clone.children[a].setAttribute('data-i', i)
-    }
-
-    layerWrapper.insertBefore(clone, layerWrapper.children[0])
-  }
-
-  // Fill out state array
-  for (let i = 0; i < 32; i++) {
-    if (i === 31) {
-      $.LAYERS[i] = { name: 'Layer 1', hidden: false, locked: false }
-    } else {
-      $.LAYERS[i] = { name: undefined, hidden: undefined, locked: undefined }
-    }
-  }
-
-  layersUpdate()
-}
 function layersSetActive (i) {
   $.layerActive = i
 
-  layersUpdate()
+  timelineUpdate()
 }
 function layersAdd () {
   for (let i = $.LAYERS.length - 1; i >= 0 ; i--) {
@@ -1063,37 +1081,13 @@ function layersAdd () {
       $.LAYERS[i].hidden = false
       $.LAYERS[i].locked = false
 
-      layersUpdate()
+      timelineUpdate()
 
       return
     }
   }
 
   console.log('max layers hit')
-}
-function layersUpdate () {
-  const layerWrapper = document.querySelector("#tl-layers")
-
-  for (let i = $.LAYERS.length - 1; i >= 0 ; i--) {
-    if ($.LAYERS[i].name !== undefined && $.LAYERS[i].hidden !== undefined && $.LAYERS[i].locked !== undefined) {
-      layerWrapper.children[i].style.display = 'flex'
-
-      if ($.layerActive === i) {
-        //layerWrapper.children[i].querySelector(`[data-name="name"]`).classList.add('active')
-      } else {
-        //layerWrapper.children[i].querySelector(`[data-name="name"]`).classList.remove('active')
-      }
-
-      layerWrapper.children[i].querySelector(`[data-name="name"]`).innerText = $.LAYERS[i].name
-      layerWrapper.children[i].querySelector(`[data-name="lock"]`).src = $.LAYERS[i].locked ? 'img/lock.svg' : 'img/unlock.svg'
-      layerWrapper.children[i].querySelector(`[data-name="hide"]`).src = $.LAYERS[i].hidden ? 'img/eye.svg' : 'img/eye-active.svg'
-    } else {
-      layerWrapper.children[i].style.display = 'none'
-      //layerWrapper.children[i].querySelector(`[data-name="name"]`).classList.remove('active')
-    }
-  }
-
-  framesUpdate()
 }
 function layersHide (e) {
   const index = parseInt(e.target.dataset.i)
@@ -1114,13 +1108,13 @@ function layersHide (e) {
     }
   }
 
-  layersUpdate()
+  timelineUpdate()
 }
 function layersLock (e) {
   const index = parseInt(e.target.dataset.i)
   $.LAYERS[index].locked = !$.LAYERS[index].locked
 
-  layersUpdate()
+  timelineUpdate()
 }
 function layersSwap (i1, i2) {
   // swap temp refs in layers arr
@@ -1144,7 +1138,7 @@ function layersSwap (i1, i2) {
     }
   }
 
-  layersUpdate()
+  timelineUpdate()
 }
 function layersInsertFromTo(from, to) {
   if ($.LAYERS[from].name === undefined && $.LAYERS[from].hidden === undefined && $.LAYERS[from].locked === undefined) {
@@ -1173,7 +1167,7 @@ function layersInsertFromTo(from, to) {
     }
   }
 
-  layersUpdate()
+  timelineUpdate()
 }
 function layersDelete (e, index) {
   const i = e ? $.layerActive : index
@@ -1211,7 +1205,7 @@ function layersDelete (e, index) {
     CURR_FRAME[idx + 32 + (~~(last / 8))] &= ~(128 >> (last & 7))
   }
 
-  layersUpdate()
+  timelineUpdate()
 }
 function layersRename (e) {
   // TODO: fix this query selector, lazy
@@ -1220,7 +1214,7 @@ function layersRename (e) {
   $.LAYERS[$.layerActive].name = newName
 
   modalClose(undefined, 'rename')
-  layersUpdate()
+  timelineUpdate()
 }
 
 const FRAMES_CANVAS = document.querySelector('#tl-cells-canvas')
@@ -1230,7 +1224,7 @@ function framesSetActive (i) {
   $.frameActive = i
   CURR_FRAME = $.FRAMES[$.frameActive]
 
-  framesUpdate()
+  timelineUpdate()
 }
 function framesGetLength () {
   let a = 0
@@ -1242,50 +1236,7 @@ function framesGetLength () {
   }
 }
 function framesUpdate () {
-  const frameWrapper = document.querySelector("#tl-frames")
 
-  let framesLen = framesGetLength()
-  let layersLen = layersGetLength()
-  let f = 0
-  let l = 0
-
-  FRAMES_CANVAS.style.width = `${framesLen * 30}px`
-  FRAMES_CANVAS.style.height = `${layersLen * 25}px`
-
-  FRAMES_CANVAS.width = framesLen * 60
-  FRAMES_CANVAS.height = layersLen * 50
-
-  while (f < framesLen) {
-    l = 0
-
-    frameWrapper.children[f].style.display = 'block'
-
-    while (l < layersLen) {
-      FRAMES_CTX.fillStyle = 'rgba(61, 61, 61)'
-      // Color gray to active layer row , active frame column
-      if (f === $.frameActive || l === ($.layerActive - 31 + layersLen - 1)) { // screwy math to reverse the order of the layers tracking
-        FRAMES_CTX.fillStyle = 'rgba(110, 110, 110)'
-      }
-
-      if (f === UI.curr.x && l === UI.curr.y) { // screwy math to reverse the order of the layers tracking
-        FRAMES_CTX.fillStyle = 'rgba(110, 110, 110)'
-      }
-
-      // Blue to active drawing frame
-      if (f === $.frameActive && l === ($.layerActive - 31 + layersLen - 1)) {
-        FRAMES_CTX.fillStyle = 'rgba(81, 151, 213)'
-      }
-
-      FRAMES_CTX.fillRect((f * 60) + 2, (l * 50) + 2, 60 - 2, 50 - 2)
-      l++
-    }
-    f++
-  }
-
-  while (f < 50) {
-    frameWrapper.children[f].style.display = 'none'
-    f++
-  }
 }
 function framesSwap (i1, i2) {
   // swap temp refs in layers arr
@@ -1293,7 +1244,7 @@ function framesSwap (i1, i2) {
   $.FRAMES[i1] = $.FRAMES[i2]
   $.FRAMES[i2] = temp
 
-  framesUpdate()
+  timelineUpdate()
 }
 function framesAdd () {
   if ($.FRAMES[$.frameActive + 1] === undefined) {
@@ -1312,7 +1263,7 @@ function framesAdd () {
     framesSetActive(i)
   }
 
-  framesUpdate()
+  timelineUpdate()
 }
 function framesDelete (e, index) {
   const i = e ? $.frameActive : index
@@ -1340,7 +1291,7 @@ function framesDelete (e, index) {
     framesSetActive(i === 0 ? 0 : i - 1) // it only one element, keep layeractive current, otherwise ,move it up one
   }
 
-  framesUpdate()
+  timelineUpdate()
 }
 function framesDuplicate () {
   framesAdd()
@@ -1353,7 +1304,6 @@ function framesDuplicate () {
     i++
   }
 }
-
 function framesNext (event) {
   if (event && $.isPlaying === 1) return // prevent button click during animation
 
@@ -1416,7 +1366,7 @@ function handleWindowEvents (e) {
     UI.curr.x = Math.floor(e.offsetX / 30)
     UI.curr.y = Math.floor(e.offsetY / 25)
 
-    framesUpdate()
+    timelineUpdate()
   } else {
     if (UI.curr.x !== -30 && UI.curr.y !== -25) { // onleave
       UI.prev.x = -30
@@ -1424,7 +1374,7 @@ function handleWindowEvents (e) {
       UI.curr.x = -30
       UI.curr.y = -25
 
-      framesUpdate()
+      timelineUpdate()
     }
   }
 
@@ -1509,12 +1459,74 @@ function handleWindowEvents (e) {
   }
 }
 
+function drawTransparencyBG () {
+
+  const canvasBG = document.querySelector('#bg-canvas')
+  const ctxBG = canvasBG.getContext('2d')
+
+	// Draw Transparency layer
+	for (let x = 0; x < CANVAS.w; x++) {
+		for (let y = 0; y < CANVAS.h; y++) {
+			if (y % 2 === 0) {
+				if (x % 2 === 0) {
+					ctxBG.fillStyle = `rgb(${COLORS[8]}, ${COLORS[8]}, ${COLORS[8]})`
+					ctxBG.fillRect(x, y, 1, 1)
+				} else {
+					ctxBG.fillStyle = `rgb(${COLORS[12]}, ${COLORS[12]}, ${COLORS[12]})`
+					ctxBG.fillRect(x, y, 1, 1)
+				}
+			} else if (x % 2 !== 0) {
+				ctxBG.fillStyle = `rgb(${COLORS[8]}, ${COLORS[8]}, ${COLORS[8]})`
+				ctxBG.fillRect(x, y, 1, 1)
+			} else {
+				ctxBG.fillStyle = `rgb(${COLORS[12]}, ${COLORS[12]}, ${COLORS[12]})`
+				ctxBG.fillRect(x, y, 1, 1)
+			}
+		}
+	}
+}
+function initFramesDOM () {
+	const frameTemplate = document.querySelector("#tl-frames-button")
+	const frameWrapper = document.querySelector("#tl-frames")
+
+	let i = 1
+	while (i < 50) {
+		const clone = frameTemplate.cloneNode(true)
+		clone.setAttribute('data-frameindex', i)
+		clone.style.display = 'none'
+		clone.setAttribute('data-i', i)
+		clone.innerText = i + 1
+
+		frameWrapper.appendChild(clone, frameWrapper.children[0])
+
+		i += 1
+	}
+}
+function initLayersDOM () {
+	// Insert DOM placeholders
+	const layerTemplate = document.querySelector("[data-layerindex='31']")
+	const layerWrapper = document.querySelector("#tl-layers")
+
+	for (let i = 30; i >= 0; i--) {
+		const clone = layerTemplate.cloneNode(true)
+		clone.setAttribute('data-layerindex', i)
+		clone.style.display = 'none'
+
+		for (let a = 0; a < clone.children.length; a++) {
+			clone.children[a].setAttribute('data-i', i)
+		}
+
+		layerWrapper.insertBefore(clone, layerWrapper.children[0])
+	}
+}
+
 function main () {
+	initLayersDOM()
+	initFramesDOM()
+	initColorPicker()
+
   canvasInit(50, 50)
   canvasDraw()
-
-  layersInit()
-  framesUpdate()
 }
 
 main()

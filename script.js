@@ -1,3 +1,117 @@
+function HSVtoRGB (hue, saturation, val) {
+	const sat = saturation / 100;
+	const value = val / 100;
+	const C = sat * value;
+	const H = hue / 60;
+	const X = C * (1 - Math.abs(H % 2 - 1));
+	const m = value - C;
+	const precision = 255;
+
+	C = (C + m) * precision | 0;
+	X = (X + m) * precision | 0;
+	m = m * precision | 0;
+
+	if (H >= 0 && H < 1) {	return { C, X, m };	return; }
+	if (H >= 1 && H < 2) {	return { X, C, m };	return; }
+	if (H >= 2 && H < 3) {	return { m, C, X };	return; }
+	if (H >= 3 && H < 4) {	return { m, X, C };	return; }
+	if (H >= 4 && H < 5) {	return { X, m, C };	return; }
+	if (H >= 5 && H < 6) {	return { C, m, X };	return; }
+}
+function RGBtoHSV(r, g, b) {
+	var red		= r / 255;
+	var green	= g / 255;
+	var blue	= b / 255;
+
+	var cmax = Math.max(red, green, blue);
+	var cmin = Math.min(red, green, blue);
+	var delta = cmax - cmin;
+	var hue = 0;
+	var saturation = 0;
+
+	if (delta) {
+		if (cmax === red ) { hue = ((green - blue) / delta); }
+		if (cmax === green ) { hue = 2 + (blue - red) / delta; }
+		if (cmax === blue ) { hue = 4 + (red - green) / delta; }
+		if (cmax) saturation = delta / cmax;
+	}
+
+  const hsv = {}
+
+	hsv.h = 60 * hue | 0;
+	if (hsv.hue < 0) hsv.h += 360;
+	hsv.s = (saturation * 100) | 0;
+	hsv.v = (cmax * 100) | 0;
+
+  return hsv
+}
+function RGBtoHSL (red, green, blue){
+  let value, hue, sat, lum, min, max, dif, r, g, b, result = {};
+  r = red/255;
+  g = green/255;
+  b = blue/255;
+  min = Math.min(r,g,b);
+  max = Math.max(r,g,b);
+  lum = (min+max)/2;
+  if(min === max){
+      hue = 0;
+      sat = 0;
+  }else{
+      dif = max - min;
+      sat = lum > 0.5 ? dif / (2 - max - min) : dif / (max + min);
+      switch (max) {
+      case r:
+          hue = (g - b) / dif;
+          break;
+      case g:
+          hue = 2 + ((b - r) / dif);
+          break;
+      case b:
+          hue = 4 + ((r - g) / dif);
+          break;
+      }
+      hue *= 60;
+      if (hue < 0) {
+          hue += 360;
+      }
+  }
+  result.l = lum * 255;
+  result.s = sat * 255;
+  result.h = hue;
+  return result;
+}
+function RGBToHex(r,g,b) {
+  r = r.toString(16);
+  g = g.toString(16);
+  b = b.toString(16);
+
+  if (r.length == 1)
+    r = "0" + r;
+  if (g.length == 1)
+    g = "0" + g;
+  if (b.length == 1)
+    b = "0" + b;
+
+  return "#" + r + g + b;
+}
+function hexToRGB(h) {
+  let r = 0, g = 0, b = 0;
+
+  // 3 digits
+  if (h.length == 4) {
+    r = "0x" + h[1] + h[1];
+    g = "0x" + h[2] + h[2];
+    b = "0x" + h[3] + h[3];
+
+  // 6 digits
+  } else if (h.length == 7) {
+    r = "0x" + h[1] + h[2];
+    g = "0x" + h[3] + h[4];
+    b = "0x" + h[5] + h[6];
+  }
+
+  return { r: +r, g: +g, b: +b }
+}
 function make (action, start, end, r) {
   let points = []
 
@@ -119,16 +233,17 @@ function blend (r1, g1, b1, r2, g2, b2) {
   let g2f = g2 * inv
   let b2f = b2 * inv
 
-  console.log({
+  return {
     r: parseInt(r1f * r2f * 255),
     g: parseInt(g1f * g2f * 255),
     b: parseInt(b1f * b2f * 255),
-  })
+  }
 }
 
 let $ = {
   FRAMES: [],
   LAYERS: [],
+  isPlaying: 0,
   frameActive: 0,
   layerActive: 31,
   colorActive: 20,
@@ -159,64 +274,175 @@ function modalClose (e, target) {
 }
 
 // INIT COLORS
-const bufColors = new ArrayBuffer(100)
+
+const APP_UTIL_COLORS = [
+  0, 0, 0, 0, // empty
+  75, 75, 75, 125, // selected
+  128, 128, 128, 255, // transparency 1
+  211, 211, 211, 255, // transparency 1
+  124, 124, 124, 255 // transparency 1
+]
+
+const bufColors = new ArrayBuffer(300)
 const COLORS = new Uint8ClampedArray(bufColors)
 
-COLORS[0] = 0 // Empty
-COLORS[1] = 0
-COLORS[2] = 0
-COLORS[3] = 0
+let i = 0;
+while (i < APP_UTIL_COLORS.length) {
+  COLORS[i] = APP_UTIL_COLORS[i]
+  COLORS[i + 1] = APP_UTIL_COLORS[i + 1]
+  COLORS[i + 2] = APP_UTIL_COLORS[i + 2]
+  COLORS[i + 3] = APP_UTIL_COLORS[i + 3]
+  i += 4
+}
 
-COLORS[4] = 75 // Selected
-COLORS[5] = 75
-COLORS[6] = 75
-COLORS[7] = 175
+const COLOR_PAL = [
+  255, 0, 0,
+  0, 255, 0,
+  0, 0, 255,
+  128, 10, 200
+]
 
-COLORS[8] = 128 // Transparency 1
-COLORS[9] = 128
-COLORS[10] = 128
-COLORS[11] = 255
+function setColorPalette () {
 
-COLORS[12] = 211 // Transparency 2
-COLORS[13] = 211
-COLORS[14] = 211
-COLORS[15] = 255
+  const colorsDOM = document.querySelector('#colors')
 
-COLORS[16] = 124 // Transparency Blended 2
-COLORS[17] = 124
-COLORS[18] = 124
-COLORS[19] = 255
-// Need black blend here
+  let i = 0
+  let color = 0
 
-COLORS[20] = 0 // Green
-COLORS[21] = 255
-COLORS[22] = 0
-COLORS[23] = 255
+  while (i < colorsDOM.children.length) {
+    colorsDOM.children[i].style.pointerEvents = 'none'
+    colorsDOM.children[i].style.background = `rgb(${85}, ${85}, ${85})`
 
-COLORS[24] = 0 // Green blended
-COLORS[25] = 150
-COLORS[26] = 0
-COLORS[27] = 255
+    // Check against colors look up
+    if (COLOR_PAL[color] !== undefined) {
+      let b = 20
+      while (b < COLORS.length) {
+        // if it exsits, write look upindex to button for active paiting set
+        if (COLORS[b] === COLOR_PAL[color] &&
+          COLORS[b + 1] === COLOR_PAL[color + 1] &&
+          COLORS[b + 2] === COLOR_PAL[color + 2]) {
 
-COLORS[28] = 0 // Blue
-COLORS[29] = 0
-COLORS[30] = 255
-COLORS[31] = 255
+          colorsDOM.children[i].style.pointerEvents = 'auto'
+          colorsDOM.children[i].setAttribute('data-colorindex', b)
+          colorsDOM.children[i].style.background = `rgb(${COLOR_PAL[color]}, ${COLOR_PAL[color + 1]}, ${COLOR_PAL[color + 2]})`
 
-COLORS[32] = 0 // Blue
-COLORS[33] = 0
-COLORS[34] = 150
-COLORS[35] = 255
+          break
+        // otherwise, set the first full 0 set of indexes to new color and set b index
+        } else if (COLORS[b] === 0 &&
+          COLORS[b + 1] === 0 &&
+          COLORS[b + 2] === 0 &&
+          COLORS[b + 3] === 0) {
+          // if in frame
+          COLORS[b] = COLOR_PAL[color]
+          COLORS[b + 1] = COLOR_PAL[color + 1]
+          COLORS[b + 2] = COLOR_PAL[color + 2]
+          COLORS[b + 3] = 255
 
-COLORS[36] = 255 // Red
-COLORS[37] = 0
-COLORS[38] = 0
-COLORS[39] = 255
+          const blended = blend(COLORS[b], COLORS[b + 1], COLORS[b + 2], 150, 150, 150)
+          COLORS[b + 4] = blended.r
+          COLORS[b + 5] = blended.g
+          COLORS[b + 6] = blended.b
+          COLORS[b + 7] = 255
 
-COLORS[40] = 150 // Red
-COLORS[41] = 0
-COLORS[42] = 0
-COLORS[43] = 255
+          colorsDOM.children[i].style.pointerEvents = 'auto'
+          colorsDOM.children[i].setAttribute('data-colorindex', b)
+          colorsDOM.children[i].style.background = `rgb(${COLOR_PAL[color]}, ${COLOR_PAL[color + 1]}, ${COLOR_PAL[color + 2]})`
+
+          break
+        }
+
+        b += 8
+      }
+    }
+
+    i += 1
+    color += 3
+  }
+}
+
+setColorPalette()
+
+function openColorPicker () {
+  const picker = document.querySelector('#color-picker')
+  picker.style.display = 'inline-block'
+  picker.style.zIndex = '5'
+}
+
+function closeColorPicker () {
+  const picker = document.querySelector('#color-picker')
+  picker.style.display = 'none'
+  picker.style.zIndex = '-1'
+}
+let COLOR_PICKER = {
+  r: 0, g: 0, b: 0, hex: ''
+}
+function addColor (e) {
+  //const imageData = blockCTX.getImageData(COLOR_PICKER.blockX, COLOR_PICKER.blockY, 1, 1).data;
+
+  COLOR_PAL.push(COLOR_PICKER.r)
+  COLOR_PAL.push(COLOR_PICKER.g)
+  COLOR_PAL.push(COLOR_PICKER.b)
+
+  setColorPalette()
+}
+function openColorPicker () {
+  const picker = document.querySelector('#color-picker')
+  picker.style.display = 'inline-block'
+  picker.style.zIndex = '5'
+}
+function closeColorPicker () {
+  const picker = document.querySelector('#color-picker')
+  picker.style.display = 'none'
+  picker.style.zIndex = '-1'
+}
+
+function setRGB (e) {
+  if (e && e.key !== 'Enter') return
+  if (e && e.key === 'Enter') {
+    COLOR_PICKER.r = parseInt(e.target.parentNode.children[1].value)
+    COLOR_PICKER.g = parseInt(e.target.parentNode.children[2].value)
+    COLOR_PICKER.b = parseInt(e.target.parentNode.children[3].value)
+
+    COLOR_PICKER.hex = RGBToHex(COLOR_PICKER.r, COLOR_PICKER.g, COLOR_PICKER.b)
+
+    updateColorPicker()
+  }
+}
+
+function setHEX (e) {
+  if (e.type === 'change' || e.key === 'Enter') {
+    COLOR_PICKER.hex = e.target.value
+
+    const rgb = hexToRGB(COLOR_PICKER.hex)
+
+    COLOR_PICKER.r = rgb.r
+    COLOR_PICKER.g = rgb.g
+    COLOR_PICKER.b = rgb.b
+
+    updateColorPicker()
+  }
+}
+
+function updateColorPicker () {
+  const picker = document.querySelector('#color-picker')
+  picker.querySelector('#color-picker-r').value = COLOR_PICKER.r
+  picker.querySelector('#color-picker-g').value = COLOR_PICKER.g
+  picker.querySelector('#color-picker-b').value = COLOR_PICKER.b
+  picker.querySelector('#color-picker-hex').value = COLOR_PICKER.hex
+}
+
+function initColorPicker () {
+  COLOR_PICKER.r = COLOR_PAL[0]
+  COLOR_PICKER.g = COLOR_PAL[1]
+  COLOR_PICKER.a = COLOR_PAL[2]
+
+  COLOR_PICKER.hex = RGBToHex(COLOR_PICKER.r, COLOR_PICKER.g, COLOR_PICKER.b)
+
+  updateColorPicker()
+}
+
+initColorPicker()
+
 
 CANVAS = {
   w: 0,
@@ -256,6 +482,7 @@ function canvasInit (w, h) {
 
   pixelBuffer = new ImageData(CANVAS.w, CANVAS.h)
   pixelResTotal = CANVAS.l
+  CANVAS.pixelResTotal = CANVAS.l
   // canvas preview buffer
   emptyPrevBuffer = new Int16Array(pixelResTotal)
   previewBuffer = new Int16Array(pixelResTotal)
@@ -267,7 +494,30 @@ function canvasInit (w, h) {
   buf8 = new Uint8ClampedArray(buf)
   buf32 = new Uint32Array(buf)
 
-  CURR_FRAME = new Uint8Array(pixelResTotal * 36)
+
+  // Init frames
+  let i = 1
+  $.FRAMES = []
+
+  const frameTemplate = document.querySelector("#tl-frames-button")
+  const frameWrapper = document.querySelector("#tl-frames")
+
+  while (i < 50) {
+    const clone = frameTemplate.cloneNode(true)
+    clone.setAttribute('data-frameindex', i)
+    clone.style.display = 'none'
+    clone.setAttribute('data-i', i)
+    clone.innerText = i + 1
+
+    frameWrapper.appendChild(clone, frameWrapper.children[0])
+
+    $.FRAMES[i] = undefined
+    i++
+  }
+
+  $.FRAMES[0] = new Uint8Array(pixelResTotal * 36)
+
+  CURR_FRAME = $.FRAMES[0]
 
   const canvasBG = document.querySelector('#bg-canvas')
   const ctxBG = canvasBG.getContext('2d')
@@ -577,12 +827,10 @@ function canvasPaint (e) {
   CANVAS.end.y = CANVAS.curr.y
 
   // Hover
-  // if (!CANVAS.mouseDown && $.toolActive !== 'move' && $.toolActive !== 'select') {
-  //   setPreviewPoint(CANVAS.prev.x, CANVAS.prev.y, 0)
-  //   setPreviewPoint(CANVAS.curr.x, CANVAS.curr.y, $.colorActive)
-  // }
-  // if (!CANVAS.mouseDown && e.type === 'mouseleave') {
-  //   setPreviewPoint(CANVAS.curr.x, CANVAS.curr.y, 0)
+  // CANVAS.activeHover = CANVAS.curr.x + CANVAS.w * CANVAS.curr.y
+  //
+  // if (e.type === 'mouseleave') {
+  //   CANVAS.activeHover = -1
   // }
 
   if (e.type === 'mousedown') {
@@ -691,6 +939,7 @@ function canvasDraw () {
 
   let pixel = 0
   let idx = 0
+  let activeHover = -1
 
   // Draw final frame buffer
   function draw () {
@@ -731,6 +980,9 @@ function canvasDraw () {
       pixel += 1
       pixel36 += 36
     }
+
+    canvasSetBuf32(CANVAS.activeHover, $.colorActive)
+
     //console.timeEnd('draw loop')
 
     pixelBuffer.data.set(buf8);
@@ -762,6 +1014,15 @@ function canvasZoomOut () {
   CANVAS_CONTAINER.parentNode.scrollTop = ((CANVAS.h * CANVAS.scaleRatio) / 2) - (CANVAS_CONTAINER.parentNode.offsetHeight / 2) + 20
 }
 
+function layersGetLength () {
+  let a = 0
+  for (let i = $.LAYERS.length - 1; i >= 0 ; i--) {
+    if ($.LAYERS[i].name === undefined && $.LAYERS[i].hidden === undefined && $.LAYERS[i].locked === undefined) {
+      return a
+    }
+    a++
+  }
+}
 function layersInit () {
   // Insert DOM placeholders
   const layerTemplate = document.querySelector("[data-layerindex='31']")
@@ -818,9 +1079,9 @@ function layersUpdate () {
       layerWrapper.children[i].style.display = 'flex'
 
       if ($.layerActive === i) {
-        layerWrapper.children[i].querySelector(`[data-name="name"]`).classList.add('active')
+        //layerWrapper.children[i].querySelector(`[data-name="name"]`).classList.add('active')
       } else {
-        layerWrapper.children[i].querySelector(`[data-name="name"]`).classList.remove('active')
+        //layerWrapper.children[i].querySelector(`[data-name="name"]`).classList.remove('active')
       }
 
       layerWrapper.children[i].querySelector(`[data-name="name"]`).innerText = $.LAYERS[i].name
@@ -828,9 +1089,11 @@ function layersUpdate () {
       layerWrapper.children[i].querySelector(`[data-name="hide"]`).src = $.LAYERS[i].hidden ? 'img/eye.svg' : 'img/eye-active.svg'
     } else {
       layerWrapper.children[i].style.display = 'none'
-      layerWrapper.children[i].querySelector(`[data-name="name"]`).classList.remove('active')
+      //layerWrapper.children[i].querySelector(`[data-name="name"]`).classList.remove('active')
     }
   }
+
+  framesUpdate()
 }
 function layersHide (e) {
   const index = parseInt(e.target.dataset.i)
@@ -912,7 +1175,7 @@ function layersInsertFromTo(from, to) {
 
   layersUpdate()
 }
-function layersRemove (e, index) {
+function layersDelete (e, index) {
   const i = e ? $.layerActive : index
 
   if ($.LAYERS[i].name === undefined && $.LAYERS[i].hidden === undefined && $.LAYERS[i].locked === undefined) {
@@ -960,6 +1223,174 @@ function layersRename (e) {
   layersUpdate()
 }
 
+const FRAMES_CANVAS = document.querySelector('#tl-cells-canvas')
+const FRAMES_CTX = FRAMES_CANVAS.getContext('2d')
+
+function framesSetActive (i) {
+  $.frameActive = i
+  CURR_FRAME = $.FRAMES[$.frameActive]
+
+  framesUpdate()
+}
+function framesGetLength () {
+  let a = 0
+  while (a <= $.FRAMES.length) {
+    if ($.FRAMES[a] === undefined) {
+      return a
+    }
+    a++
+  }
+}
+function framesUpdate () {
+  const frameWrapper = document.querySelector("#tl-frames")
+
+  let framesLen = framesGetLength()
+  let layersLen = layersGetLength()
+  let f = 0
+  let l = 0
+
+  FRAMES_CANVAS.style.width = `${framesLen * 30}px`
+  FRAMES_CANVAS.style.height = `${layersLen * 25}px`
+
+  FRAMES_CANVAS.width = framesLen * 60
+  FRAMES_CANVAS.height = layersLen * 50
+
+  while (f < framesLen) {
+    l = 0
+
+    frameWrapper.children[f].style.display = 'block'
+
+    while (l < layersLen) {
+      FRAMES_CTX.fillStyle = 'rgba(61, 61, 61)'
+      // Color gray to active layer row , active frame column
+      if (f === $.frameActive || l === ($.layerActive - 31 + layersLen - 1)) { // screwy math to reverse the order of the layers tracking
+        FRAMES_CTX.fillStyle = 'rgba(110, 110, 110)'
+      }
+
+      if (f === UI.curr.x && l === UI.curr.y) { // screwy math to reverse the order of the layers tracking
+        FRAMES_CTX.fillStyle = 'rgba(110, 110, 110)'
+      }
+
+      // Blue to active drawing frame
+      if (f === $.frameActive && l === ($.layerActive - 31 + layersLen - 1)) {
+        FRAMES_CTX.fillStyle = 'rgba(81, 151, 213)'
+      }
+
+      FRAMES_CTX.fillRect((f * 60) + 2, (l * 50) + 2, 60 - 2, 50 - 2)
+      l++
+    }
+    f++
+  }
+
+  while (f < 50) {
+    frameWrapper.children[f].style.display = 'none'
+    f++
+  }
+}
+function framesSwap (i1, i2) {
+  // swap temp refs in layers arr
+  const temp = $.FRAMES[i1]
+  $.FRAMES[i1] = $.FRAMES[i2]
+  $.FRAMES[i2] = temp
+
+  framesUpdate()
+}
+function framesAdd () {
+  if ($.FRAMES[$.frameActive + 1] === undefined) {
+    // If frame is last, just set next to empty array
+    $.FRAMES[$.frameActive + 1] = new Uint8Array(CANVAS.pixelResTotal * 36)
+    framesSetActive($.frameActive + 1)
+  } else {
+    // If frame is in middle, swap every frame starting from the end to this index and assign this undefined spot to an empty array
+    let i = framesGetLength()
+    while (i > $.frameActive + 1) {
+      framesSwap(i, i - 1)
+      i--
+    }
+
+    $.FRAMES[i] = new Uint8Array(CANVAS.pixelResTotal * 36)
+    framesSetActive(i)
+  }
+
+  framesUpdate()
+}
+function framesDelete (e, index) {
+  const i = e ? $.frameActive : index
+
+  // if out of range in fixed array, just ignore
+  if ($.FRAMES[i] === undefined) {
+    return
+  }
+
+  let last = framesGetLength()
+  // If there there is layer above, so index minus 1
+  if ($.FRAMES[i + 1] !== undefined) {
+    // End is first layer index minus 1 that has all undefined
+    $.FRAMES[i] = undefined
+
+    let track = i
+
+    while (track < last) {
+      framesSwap(track, track + 1)
+      track += 1
+    }
+  } else {
+    // Otherwise just delete curr index
+    $.FRAMES[i] = i === 0 ? new Uint8Array(CANVAS.pixelResTotal * 36) : undefined
+    framesSetActive(i === 0 ? 0 : i - 1) // it only one element, keep layeractive current, otherwise ,move it up one
+  }
+
+  framesUpdate()
+}
+function framesDuplicate () {
+  framesAdd()
+
+  const length = $.FRAMES[$.frameActive].length
+  let i = 0
+
+  while (i < length) {
+    $.FRAMES[$.frameActive][i] = $.FRAMES[$.frameActive - 1][i]
+    i++
+  }
+}
+
+function framesNext (event) {
+  if (event && $.isPlaying === 1) return // prevent button click during animation
+
+  const next = ($.frameActive + 1) % framesGetLength()
+  framesSetActive(next)
+}
+function framesPrevious (event) {
+  if (event && $.isPlaying === 1) return // prevent button click during animation
+
+  const prev = $.frameActive - 1 === -1 ? (framesGetLength() - 1) : $.frameActive - 1
+  framesSetActive(prev)
+}
+function stop() {
+  $.isPlaying = 0
+  clearTimeout($.timeout)
+}
+function play() {
+  function loop() {
+    $.isPlaying = 1
+    framesNext()
+    $.timeout = setTimeout(loop, 100)
+  }
+  loop()
+}
+function togglePlay (e) {
+
+  if (framesGetLength() === 1) return
+
+  if ($.isPlaying === 1) {
+    stop()
+    e.target.children[0].src = 'img/play.svg'
+  } else {
+    play()
+    e.target.children[0].src = 'img/stop.svg'
+  }
+}
+
 window.addEventListener('mousedown', handleWindowEvents, false)
 window.addEventListener('mousemove', handleWindowEvents, false)
 window.addEventListener('mouseup', handleWindowEvents, false)
@@ -968,12 +1399,38 @@ window.addEventListener('dblclick', handleWindowEvents, false)
 let UI = {
   mouseDown: false,
   start: -1,
-  end: -1
+  end: -1,
+  curr: { x: -30, y: -25 },
+  prev: { x: -30, y: -25 }
 }
 
 function handleWindowEvents (e) {
   if (e.type === 'mousedown') {
     UI.mouseDown = true
+  }
+
+  // If over timeline, set hover
+  if (e.target.id === 'tl-cells-canvas') {
+    UI.prev.x = UI.curr.x
+    UI.prev.y = UI.curr.y
+    UI.curr.x = Math.floor(e.offsetX / 30)
+    UI.curr.y = Math.floor(e.offsetY / 25)
+
+    framesUpdate()
+  } else {
+    if (UI.curr.x !== -30 && UI.curr.y !== -25) { // onleave
+      UI.prev.x = -30
+      UI.prev.y = -25
+      UI.curr.x = -30
+      UI.curr.y = -25
+
+      framesUpdate()
+    }
+  }
+
+  if (e.type === 'mousedown' && e.target.id === 'tl-cells-canvas') {
+    framesSetActive(UI.curr.x)
+    layersSetActive(31 - (layersGetLength() - 1) + UI.curr.y )
   }
 
   // If over layers
@@ -1057,6 +1514,7 @@ function main () {
   canvasDraw()
 
   layersInit()
+  framesUpdate()
 }
 
 main()

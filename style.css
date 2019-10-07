@@ -129,10 +129,12 @@ canvas {
 .hide-scrbar::-webkit-scrollbar { height: 0 !important; width: 0 !important; }
 
 .colors-btn.active {
+  border-radius: 2px;
   box-shadow: inset 0px 0px 0px 2px #3498db, inset 0px 0px 0px 4px rgb(50, 50, 50);
 }
 
 .colors-btn {
+  border-radius: 2px;
   box-shadow: inset 0px 0px 0px 2px rgb(61, 61, 61), inset 0px 0px 0px 4px rgb(50, 50, 50);
 }
 

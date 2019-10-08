@@ -1,84 +1,22 @@
-function HSVtoRGB (hue, saturation, val) {
-	const sat = saturation / 100;
-	const value = val / 100;
-	const C = sat * value;
-	const H = hue / 60;
-	const X = C * (1 - Math.abs(H % 2 - 1));
-	const m = value - C;
-	const precision = 255;
+function HSLtoRGB (hue, saturation, lightness) {
+	let sat = saturation / 100;
+	let light = lightness / 100;
+	let C = sat * (1 - Math.abs(2 * light - 1));
+	let H = hue / 60;
+	let X = C * (1 - Math.abs(H % 2 - 1));
+	let m = light - C/2;
+	let precision = 255;
 
 	C = (C + m) * precision | 0;
 	X = (X + m) * precision | 0;
 	m = m * precision | 0;
 
-	if (H >= 0 && H < 1) {	return { C, X, m };	return; }
-	if (H >= 1 && H < 2) {	return { X, C, m };	return; }
-	if (H >= 2 && H < 3) {	return { m, C, X };	return; }
-	if (H >= 3 && H < 4) {	return { m, X, C };	return; }
-	if (H >= 4 && H < 5) {	return { X, m, C };	return; }
-	if (H >= 5 && H < 6) {	return { C, m, X };	return; }
-}
-function RGBtoHSV(r, g, b) {
-	var red		= r / 255;
-	var green	= g / 255;
-	var blue	= b / 255;
-
-	var cmax = Math.max(red, green, blue);
-	var cmin = Math.min(red, green, blue);
-	var delta = cmax - cmin;
-	var hue = 0;
-	var saturation = 0;
-
-	if (delta) {
-		if (cmax === red ) { hue = ((green - blue) / delta); }
-		if (cmax === green ) { hue = 2 + (blue - red) / delta; }
-		if (cmax === blue ) { hue = 4 + (red - green) / delta; }
-		if (cmax) saturation = delta / cmax;
-	}
-
-  const hsv = {}
-
-	hsv.h = 60 * hue | 0;
-	if (hsv.hue < 0) hsv.h += 360;
-	hsv.s = (saturation * 100) | 0;
-	hsv.v = (cmax * 100) | 0;
-
-  return hsv
-}
-function RGBtoHSL (red, green, blue){
-  let value, hue, sat, lum, min, max, dif, r, g, b, result = {};
-  r = red/255;
-  g = green/255;
-  b = blue/255;
-  min = Math.min(r,g,b);
-  max = Math.max(r,g,b);
-  lum = (min+max)/2;
-  if(min === max){
-      hue = 0;
-      sat = 0;
-  }else{
-      dif = max - min;
-      sat = lum > 0.5 ? dif / (2 - max - min) : dif / (max + min);
-      switch (max) {
-      case r:
-          hue = (g - b) / dif;
-          break;
-      case g:
-          hue = 2 + ((b - r) / dif);
-          break;
-      case b:
-          hue = 4 + ((r - g) / dif);
-          break;
-      }
-      hue *= 60;
-      if (hue < 0) {
-          hue += 360;
-      }
-  }
-  result.l = lum * 255;
-  result.s = sat * 255;
-  result.h = hue;
-  return result;
+	if (H >= 0 && H < 1) {	setRGBA(C, X, m);	return; }
+	if (H >= 1 && H < 2) {	setRGBA(X, C, m);	return; }
+	if (H >= 2 && H < 3) {	setRGBA(m, C, X);	return; }
+	if (H >= 3 && H < 4) {	setRGBA(m, X, C);	return; }
+	if (H >= 4 && H < 5) {	setRGBA(X, m, C);	return; }
+	if (H >= 5 && H < 6) {	setRGBA(C, m, X);	return; }
 }
 function RGBToHex(r,g,b) {
   r = r.toString(16);
@@ -387,7 +325,7 @@ function closeColorPicker () {
   picker.style.zIndex = '-1'
 }
 let COLOR_PICKER = {
-  r: 0, g: 0, b: 0, hex: ''
+  r: 0, g: 0, b: 0, hex: '', hue: 0, saturation: 100, value: 50
 }
 function addColor (e) {
   //const imageData = blockCTX.getImageData(COLOR_PICKER.blockX, COLOR_PICKER.blockY, 1, 1).data;
@@ -424,6 +362,19 @@ function setRGB (e) {
 function setHEX (e) {
   if (e.type === 'change' || e.key === 'Enter') {
     COLOR_PICKER.hex = e.target.value
+
+    const rgb = hexToRGB(COLOR_PICKER.hex)
+
+    COLOR_PICKER.r = rgb.r
+    COLOR_PICKER.g = rgb.g
+    COLOR_PICKER.b = rgb.b
+
+    updateColorPicker()
+  }
+}
+function setHue (e) {
+  if (e.type === 'change') {
+    COLOR_PICKER.hue = e.target.value
 
     const rgb = hexToRGB(COLOR_PICKER.hex)
 
@@ -496,7 +447,7 @@ function timelineInit (total) {
 }
 
 function timelineUpdate () {
-	// FRAMES UPDATE
+	// FRAMES TILES UPDATE
 	const frameWrapper = document.querySelector("#tl-frames")
 
   let framesLen = framesGetLength()
@@ -514,6 +465,11 @@ function timelineUpdate () {
     l = 0
 
     frameWrapper.children[f].style.display = 'block'
+		if (f === $.frameActive) {
+			frameWrapper.children[f].style.background = 'rgb(110, 110, 110)'
+		} else {
+			frameWrapper.children[f].style.background = ''
+		}
 
     while (l < layersLen) {
       FRAMES_CTX.fillStyle = 'rgba(61, 61, 61)'
@@ -537,6 +493,7 @@ function timelineUpdate () {
     f++
   }
 
+	// Set remaining frames to hidden
   while (f < 50) {
     frameWrapper.children[f].style.display = 'none'
     f++
@@ -550,14 +507,16 @@ function timelineUpdate () {
 			layerWrapper.children[i].style.display = 'flex'
 
 			if ($.layerActive === i) {
-				//layerWrapper.children[i].querySelector(`[data-name="name"]`).classList.add('active')
+				layerWrapper.children[i].style.background = 'rgb(110, 110, 110)'
 			} else {
-				//layerWrapper.children[i].querySelector(`[data-name="name"]`).classList.remove('active')
+				layerWrapper.children[i].style.background = 'transparent'
 			}
 
 			layerWrapper.children[i].querySelector(`[data-name="name"]`).innerText = $.LAYERS[i].name
 			layerWrapper.children[i].querySelector(`[data-name="lock"]`).src = $.LAYERS[i].locked ? 'img/lock.svg' : 'img/unlock.svg'
-			layerWrapper.children[i].querySelector(`[data-name="hide"]`).src = $.LAYERS[i].hidden ? 'img/eye.svg' : 'img/eye-active.svg'
+			layerWrapper.children[i].querySelector(`[data-name="lock"]`).parentNode.style.background = $.LAYERS[i].locked ? 'rgb(81, 151, 213)' : ''
+			layerWrapper.children[i].querySelector(`[data-name="hide"]`).src = $.LAYERS[i].hidden ? 'img/eye-active.svg' : 'img/eye.svg'
+			layerWrapper.children[i].querySelector(`[data-name="hide"]`).parentNode.style.background = $.LAYERS[i].hidden ? 'rgb(81, 151, 213)' : ''
 		} else {
 			layerWrapper.children[i].style.display = 'none'
 			//layerWrapper.children[i].querySelector(`[data-name="name"]`).classList.remove('active')
@@ -1069,8 +1028,8 @@ function layersGetLength () {
     a++
   }
 }
-function layersSetActive (i) {
-  $.layerActive = i
+function layersSetActive (event, i) {
+  $.layerActive = event ? parseInt(event.target.dataset.i) : i
 
   timelineUpdate()
 }
@@ -1221,10 +1180,15 @@ const FRAMES_CANVAS = document.querySelector('#tl-cells-canvas')
 const FRAMES_CTX = FRAMES_CANVAS.getContext('2d')
 
 function framesSetActive (i) {
-  $.frameActive = i
+	$.frameActive = i
+
   CURR_FRAME = $.FRAMES[$.frameActive]
 
   timelineUpdate()
+}
+function framesSetActiveDOM (e) {
+	const i = parseInt(e.target.dataset.i)
+	framesSetActive(i)
 }
 function framesGetLength () {
   let a = 0
@@ -1234,9 +1198,6 @@ function framesGetLength () {
     }
     a++
   }
-}
-function framesUpdate () {
-
 }
 function framesSwap (i1, i2) {
   // swap temp refs in layers arr
@@ -1316,6 +1277,7 @@ function framesPrevious (event) {
   const prev = $.frameActive - 1 === -1 ? (framesGetLength() - 1) : $.frameActive - 1
   framesSetActive(prev)
 }
+
 function stop() {
   $.isPlaying = 0
   clearTimeout($.timeout)
@@ -1378,61 +1340,16 @@ function handleWindowEvents (e) {
     }
   }
 
-  if (e.type === 'mousedown' && e.target.id === 'tl-cells-canvas') {
-    framesSetActive(UI.curr.x)
-    layersSetActive(31 - (layersGetLength() - 1) + UI.curr.y )
-  }
 
-  // If over layers
-  if (e.target.dataset.tllayers !== undefined && e.target.dataset.name) {
-    // If mouse down, init tracking indexes
-    if (e.type === 'mousedown') {
-      UI.start = parseInt(e.target.dataset.i)
-      UI.end = parseInt(e.target.dataset.i)
-    }
-
-    if (UI.mouseDown && e.type === 'mousemove') {
-      // Get layer wrapper and assign it to target end drop
-      const target = e.target.closest('[data-layerindex]')
-
-      UI.end = parseInt(target.dataset.layerindex)
-
-      // Reset all layer button styles
-      let i = 0
-      while (i < target.parentNode.children.length) {
-        target.parentNode.children[i].style.boxShadow = 'none'
-        i++
-      }
-
-      // Set style of current target button
-      if (UI.start !== UI.end) {
-        target.style.boxShadow = `rgb(255, 255, 255) 0px ${UI.start > UI.end ? '2px' : '-2px'} 0px 0px inset`
-      }
-    }
-
-    if (e.type === 'dblclick') {
-      modalOpen(undefined, 'rename')
-    }
-  }
+	if (e.target.hasAttribute('data-tllayers') && e.type === 'dblclick') {
+		modalOpen(undefined, 'rename')
+	}
 
   if (e.type === 'mouseup') {
-    // If indexes are not the same, make swap between start and end
-    // else if we're mouseup but still over layer, just set current index to active
-    if (UI.start !== UI.end) {
-      layersInsertFromTo(UI.start, UI.end)
-    } else if (e.target.dataset.tllayers !== undefined && e.target.dataset.name) {
-      layersSetActive(UI.start)
-    }
-
-    // Reset style of target button
-    if (UI.end !== -1 && UI.start !== UI.end) {
-      document.querySelector(`[data-layerindex="${UI.end}"]`).style.boxShadow = 'none'
-    }
-
-    UI.mouseDown = false
-    UI.start = -1
-    UI.end = -1
-
+		if (e.target.id === 'tl-cells-canvas') {
+	    framesSetActive(UI.curr.x)
+	    layersSetActive(undefined, 31 - (layersGetLength() - 1) + UI.curr.y )
+	  }
     // TODO: clean flag below to be tied to window
     if (!CANVAS.mouseDown) return
 

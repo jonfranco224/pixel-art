@@ -73,7 +73,7 @@
         </div>
         <div class='fl'>
           <!-- <button class='bg-light bord-dark-l' onclick=''>
-            <i style="pointer-events: none; " class="fas fa-trash"></i>
+            <i class="fas fa-eye-slash"></i>
           </button> -->
           <button class='bg-light bord-dark-l' onclick='openColorPicker()'>
             <i style="pointer-events: none; " class="fas fa-plus"></i>
@@ -113,6 +113,33 @@
             <div class='fl fl-justify-between'>
               <!-- <canvas style='border-radius: 2px;' class='m-r-5 bord-dark' id="color-block" height="150" width="150"></canvas>
               <canvas style='border-radius: 2px;' class='bord-dark' id="color-strip" height="150" width="30"></canvas> -->
+            </div>
+            <div class='fl-center m-t-5'>
+              <div class='w-full fl-center'>
+                <small class='p-r-5 w-min-40'>Hue</small>
+                <div class='relative w-full h-25 fl-center'>
+                  <div id='hue' class='w-full h-full bord-dark' style='position: absolute; top: 0; left: 0; border-radius: 2px; z-index: -1;'></div>
+                  <input id='color-picker-hue' value="0" type="range" min="0" max="260" step="1" onkeydown="" class='w-full' style="text-align: center; z-index: 5;" />
+                </div>
+              </div>
+            </div>
+            <div class='fl-center m-t-5'>
+              <div class='w-full fl-center'>
+                <small class='p-r-5 w-min-40'>Sat</small>
+                <div class='relative w-full h-25 fl-center'>
+                  <div class='w-full h-full bord-dark' style='position: absolute; top: 0; left: 0; border-radius: 2px; z-index: -1;   background: linear-gradient(to right, hsl(0, 0%, 50%) 0%, hsl(0, 100%, 50%) 100%);'></div>
+                  <input id='color-picker-sat' value="100" min="0" max="100" step="1" type="range" onkeydown="" class='w-full' style="text-align: center; z-index: 5;" />
+                </div>
+              </div>
+            </div>
+            <div class='fl-center m-t-5'>
+              <div class='w-full fl-center'>
+                <small class='p-r-5 w-min-40'>Light</small>
+                <div class='relative w-full h-25 fl-center'>
+                  <div class='w-full h-full bord-dark' style='position: absolute; top: 0; left: 0; border-radius: 2px; z-index: -1;   background: linear-gradient(to right, hsl(0, 100%, 0%) 0%, hsl(0, 100%, 50%) 50%, hsl(0, 100%, 100%) 100%);'></div>
+                  <input id='color-picker-val' value="50" min="0" max="100" step="1" type="range" onkeydown="" class='w-full' style="text-align: center; z-index: 5;" />
+                </div>
+              </div>
             </div>
             <div class='fl-center m-t-5'>
               <div class='w-full fl-center'>
@@ -211,7 +238,7 @@
     <div class='h-30 fl'>
       <div class='fl fl-justify-between w-170 bg-light' style='pointer-events: none;'>
         <button data-i="31" data-tllayers="" onclick="layersHide(event)">
-          <img src="img/eye-active.svg" data-name="hide" style="pointer-events: none;">
+          <img src="img/eye.svg" data-name="hide" style="pointer-events: none;">
         </button>
         <button data-i="31" data-tllayers="" onclick="layersLock(event)">
           <img src="img/unlock.svg" data-name="lock" style="pointer-events: none;">
@@ -219,25 +246,25 @@
         <button data-i="31" data-tllayers="" data-name="name" style="text-align: left;" class="w-full" text="No Name">Name</button>
       </div>
       <div id='tl-frames' class='hide-scrbar fl-1 fl' style='overflow: scroll;'>
-        <button style="min-width: 30px; max-width: 30px; font-size: 10px;" id='tl-frames-button' data-i="0">1</button>
+        <button class='hover' style="min-width: 30px; max-width: 30px; font-size: 10px; border-left: 1px solid rgb(61, 61, 61);" id='tl-frames-button' onclick="framesSetActiveDOM(event)" data-i="0">1</button>
       </div>
     </div>
     <div class='fl-1 h-180 fl'>
       <div id='tl-layers' class='hide-scrbar w-min-170 p-b-30' style='overflow: scroll;'>
         <!-- <canvas class='m-b-15' id='tl-layers-canvas' /> -->
-        <div data-layerindex="31" data-tllayers="" class="fl h-25 bg-light" style="display: flex; box-shadow: none;">
+        <div data-layerindex="31" data-tllayers="" class="fl h-25 bg-light" style="display: flex; box-shadow: none; border-top: 1px solid rgb(61, 61, 61);">
           <button data-i="31" data-tllayers="" onclick="layersHide(event)">
             <img src="img/eye-active.svg" data-name="hide" style="pointer-events: none;">
           </button>
           <button data-i="31" data-tllayers="" onclick="layersLock(event)">
             <img src="img/unlock.svg" data-name="lock" style="pointer-events: none;">
           </button>
-          <button data-i="31" data-tllayers="" data-name="name" style="text-align: left;" class="w-full" text="No Name">Layer 1</button>
+          <button data-i="31" data-tllayers="" onclick="layersSetActive(event)" data-name="name" style="text-align: left;" class="w-full" text="No Name">Layer 1</button>
         </div>
 
       </div>
       <div id='tl-cells' class='fl-1 bg-dark' style='overflow: scroll;'>
-        <canvas style='width: 0px; height: 0px;' class='m-b-15 clickable' id='tl-cells-canvas' />
+        <canvas style='width: 0px; height: 0px;' class='clickable' id='tl-cells-canvas' />
       </div>
     </div>
   </div>

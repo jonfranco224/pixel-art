@@ -37,6 +37,10 @@ button {
   font-weight: 600;
 }
 
+svg {
+  pointer-events: none;
+}
+
 button:hover {
   background: rgba(110,110,110);
 }
@@ -68,6 +72,10 @@ canvas {
   image-rendering: -moz-crisp-edges;
   image-rendering: -webkit-crisp-edges;
   image-rendering: pixelated;
+}
+
+.b-rad-2 {
+  border-radius: 2px;
 }
 
 .select {
@@ -172,7 +180,12 @@ canvas {
   display: default;
 }
 
+#modal {
+  z-index: 5;
+}
+
 #modal:not(.visible) {
+  z-index: -1;
   display: none;
 }
 

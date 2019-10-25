@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>Pixel Fart</title>
   <link rel="stylesheet" type="text/css" href="https://www.mongodb.com/css/mongodb-framework.css">
-<script defer="true" src="https://use.fontawesome.com/releases/v5.6.1/js/all.js" integrity="sha384-R5JkiUweZpJjELPWqttAYmYM1P3SNEJRM6ecTQF05pFFtxmCO+Y1CiUhvuDzgSVZ" crossorigin="anonymous"></script><link rel="stylesheet" href="./style.css">
+  <script defer="true" src="https://use.fontawesome.com/releases/v5.6.1/js/all.js" integrity="sha384-R5JkiUweZpJjELPWqttAYmYM1P3SNEJRM6ecTQF05pFFtxmCO+Y1CiUhvuDzgSVZ" crossorigin="anonymous"></script><link rel="stylesheet" href="./style.css">
 </head>
 <body class='fl-column' style='height: 100vh;'>
   <div class='h-min-35 bg-light bord-dark-b fl'>
@@ -18,17 +18,15 @@
         </button>
       </div>
       <div class='fl-1 fl fl-justify-center'>
-        <!-- <button class='w-55 bord-dark-h' onclick='historyUndo()'><i class="fas fa-undo"></i></button> -->
-        <!-- <button class='w-55 bord-dark-r' onclick='historyRedo()'><i class="fas fa-redo"></i></button> -->
+        <button class='w-55 bord-dark-h' onclick='historyUndo()'><i class="fas fa-undo"></i></button>
+        <button class='w-55 bord-dark-r' onclick='historyRedo()'><i class="fas fa-redo"></i></button>
         <!-- <button class='w-55 bord-dark-r' onclick='historyRedo()'><i class="fas fa-arrows-alt"></i></button> -->
       </div>
-      <!-- <div class='fl-1 fl fl-justify-end'>
-        <a id="download" download="pixelart.png" class='h-full' style='display: inline-block;'>
-          <button class='w-60 bord-dark-l h-full' onclick='download()' style='font-size: 16px;'>
-            <i class="fas fa-file-download"></i>
-          </button>
-        </a>
-      </div> -->
+      <div class='fl-1 fl fl-justify-end'>
+        <button class='w-60 bord-dark-l h-full' onclick='modalOpen(event)' data-val='export' style='font-size: 16px;'>
+          <i class="fas fa-file-download"></i>
+        </button>
+      </div>
     </div>
   </div>
   <div class='fl-1 fl' style='height: calc(100% - 35px - 35px - 30px - 176px);'>
@@ -44,6 +42,9 @@
         <button onclick="setToolActive(event)" class="w-30 h-30 tools-btn hover" data-tool="line">
           <img src="img/line.svg" style="height: 13px; width: 13px; pointer-events: none;">
         </button>
+        <button onclick="setToolActive(event)" class="w-30 h-30 tools-btn hover" data-tool="paintbucket">
+          <img src="img/paintbucket.svg" style="height: 13px; width: 13px; pointer-events: none;">
+        </button>
         <button onclick="setToolActive(event)" class="w-30 h-30 tools-btn hover" data-tool="square">
           <img src="img/square.svg" style="height: 13px; width: 13px; pointer-events: none;">
         </button>
@@ -56,13 +57,10 @@
         <button onclick="setToolActive(event)" class="w-30 h-30 tools-btn hover" data-tool="move">
           <img src="img/move.svg" style="height: 13px; width: 13px; pointer-events: none;">
         </button>
-        <button onclick="setToolActive(event)" class="w-30 h-30 tools-btn hover" data-tool="move" style='pointer-events: none;'>
+        <button onclick="setToolActive(event)" class="w-30 h-30 tools-btn hover" style='pointer-events: none;'>
 
         </button>
-        <button onclick="setToolActive(event)" class="w-30 h-30 tools-btn hover" data-tool="move" style='pointer-events: none;'>
-
-        </button>
-        <button onclick="setToolActive(event)" class="w-30 h-30 tools-btn hover" data-tool="move" style='pointer-events: none;'>
+        <button onclick="setToolActive(event)" class="w-30 h-30 tools-btn hover" style='pointer-events: none;'>
 
         </button>
 
@@ -72,44 +70,48 @@
           <small>Colors</small>
         </div>
         <div class='fl'>
-          <!-- <button class='bg-light bord-dark-l' onclick=''>
-            <i class="fas fa-eye-slash"></i>
-          </button> -->
+          <!-- <button class='bg-light bord-dark-l' onclick='deleteColor()'>
+            <i style="pointer-events: none; " class="fas fa-trash"></i>
+          </button>
           <button class='bg-light bord-dark-l' onclick='openColorPicker()'>
+            <i style="pointer-events: none; " class="fas fa-plus"></i>
+          </button> -->
+        </div>
+      </div>
+      <div class='fl fl-center bg-light relative'>
+        <div id='colors' class='fl fl-wrap p-5 w-min-160 w-max-160'>
+          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25 active" onclick="colorPaletteEdit(event)" ondblclick="colorPaletteEdit(event)"></button>
+          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="colorPaletteEdit(event)" ondblclick="colorPaletteEdit(event)"></button>
+          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="colorPaletteEdit(event)" ondblclick="colorPaletteEdit(event)"></button>
+          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="colorPaletteEdit(event)" ondblclick="colorPaletteEdit(event)"></button>
+          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="colorPaletteEdit(event)" ondblclick="colorPaletteEdit(event)"></button>
+          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="colorPaletteEdit(event)" ondblclick="colorPaletteEdit(event)"></button>
+          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="colorPaletteEdit(event)" ondblclick="colorPaletteEdit(event)"></button>
+          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="colorPaletteEdit(event)" ondblclick="colorPaletteEdit(event)"></button>
+          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="colorPaletteEdit(event)" ondblclick="colorPaletteEdit(event)"></button>
+          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="colorPaletteEdit(event)" ondblclick="colorPaletteEdit(event)"></button>
+          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="colorPaletteEdit(event)" ondblclick="colorPaletteEdit(event)"></button>
+          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="colorPaletteEdit(event)" ondblclick="colorPaletteEdit(event)"></button>
+          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="colorPaletteEdit(event)" ondblclick="colorPaletteEdit(event)"></button>
+          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="colorPaletteEdit(event)" ondblclick="colorPaletteEdit(event)"></button>
+          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="colorPaletteEdit(event)" ondblclick="colorPaletteEdit(event)"></button>
+          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="colorPaletteEdit(event)" ondblclick="colorPaletteEdit(event)"></button>
+          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="colorPaletteEdit(event)" ondblclick="colorPaletteEdit(event)"></button>
+          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="colorPaletteEdit(event)" ondblclick="colorPaletteEdit(event)"></button>
+          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="colorPaletteEdit(event)" ondblclick="colorPaletteEdit(event)"></button>
+          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="colorPaletteEdit(event)" ondblclick="colorPaletteEdit(event)"></button>
+          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="colorPaletteEdit(event)" ondblclick="colorPaletteEdit(event)"></button>
+          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="colorPaletteEdit(event)" ondblclick="colorPaletteEdit(event)"></button>
+          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="colorPaletteEdit(event)" ondblclick="colorPaletteEdit(event)"></button>
+          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="colorPaletteEdit(event)" ondblclick="colorPaletteEdit(event)"></button>
+          <button id='colors-button-add' style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25 fl-center" onclick="colorPaletteEdit(event)">
             <i style="pointer-events: none; " class="fas fa-plus"></i>
           </button>
         </div>
-      </div>
-      <div class='bg-light relative'>
-        <div id='colors' class='fl fl-justify-between fl-wrap p-5'>
-          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="setColorActive(event)"></button>
-          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="setColorActive(event)"></button>
-          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="setColorActive(event)"></button>
-          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="setColorActive(event)"></button>
-          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="setColorActive(event)"></button>
-          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="setColorActive(event)"></button>
-          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="setColorActive(event)"></button>
-          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="setColorActive(event)"></button>
-          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="setColorActive(event)"></button>
-          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="setColorActive(event)"></button>
-          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="setColorActive(event)"></button>
-          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="setColorActive(event)"></button>
-          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="setColorActive(event)"></button>
-          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="setColorActive(event)"></button>
-          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="setColorActive(event)"></button>
-          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="setColorActive(event)"></button>
-          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="setColorActive(event)"></button>
-          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="setColorActive(event)"></button>
-          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="setColorActive(event)"></button>
-          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="setColorActive(event)"></button>
-          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="setColorActive(event)"></button>
-          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="setColorActive(event)"></button>
-          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="setColorActive(event)"></button>
-          <button style="margin-bottom: 2px;" class="fl-1 colors-btn h-25 w-min-25 w-max-25" onclick="setColorActive(event)"></button>
-        </div>
+        
         <div id="color-picker" class="bg-light bord-dark" style=' display: none; z-index: -1; position: absolute; top: -27px; right: -210px; width: 210px;'>
           <small class='fl-center m-0 bg-mid bord-dark-b p-v-5'>Choose Color</small>
-          <div class='p-10'>
+          <div class='p-h-10 p-t-5 p-b-10'>
             <div class='fl fl-justify-between'>
               <!-- <canvas style='border-radius: 2px;' class='m-r-5 bord-dark' id="color-block" height="150" width="150"></canvas>
               <canvas style='border-radius: 2px;' class='bord-dark' id="color-strip" height="150" width="30"></canvas> -->
@@ -119,7 +121,7 @@
                 <small class='p-r-5 w-min-40'>Hue</small>
                 <div class='relative w-full h-25 fl-center'>
                   <div id='hue' class='w-full h-full bord-dark' style='position: absolute; top: 0; left: 0; border-radius: 2px; z-index: -1;'></div>
-                  <input id='color-picker-hue' value="0" type="range" min="0" max="260" step="1" onkeydown="" class='w-full' style="text-align: center; z-index: 5;" />
+                  <input id='color-picker-h' oninput="setHSL(event)" value="0" type="range" min="0" max="359" step="1" onkeydown="" class='w-full' style="text-align: center; z-index: 5;" />
                 </div>
               </div>
             </div>
@@ -128,7 +130,7 @@
                 <small class='p-r-5 w-min-40'>Sat</small>
                 <div class='relative w-full h-25 fl-center'>
                   <div class='w-full h-full bord-dark' style='position: absolute; top: 0; left: 0; border-radius: 2px; z-index: -1;   background: linear-gradient(to right, hsl(0, 0%, 50%) 0%, hsl(0, 100%, 50%) 100%);'></div>
-                  <input id='color-picker-sat' value="100" min="0" max="100" step="1" type="range" onkeydown="" class='w-full' style="text-align: center; z-index: 5;" />
+                  <input id='color-picker-s' oninput="setHSL(event)" value="100" min="1" max="99" step="1" type="range" onkeydown="" class='w-full' style="text-align: center; z-index: 5;" />
                 </div>
               </div>
             </div>
@@ -137,7 +139,7 @@
                 <small class='p-r-5 w-min-40'>Light</small>
                 <div class='relative w-full h-25 fl-center'>
                   <div class='w-full h-full bord-dark' style='position: absolute; top: 0; left: 0; border-radius: 2px; z-index: -1;   background: linear-gradient(to right, hsl(0, 100%, 0%) 0%, hsl(0, 100%, 50%) 50%, hsl(0, 100%, 100%) 100%);'></div>
-                  <input id='color-picker-val' value="50" min="0" max="100" step="1" type="range" onkeydown="" class='w-full' style="text-align: center; z-index: 5;" />
+                  <input id='color-picker-l' oninput="setHSL(event)" value="50" min="1" max="99" step="1" type="range" onkeydown="" class='w-full' style="text-align: center; z-index: 5;" />
                 </div>
               </div>
             </div>
@@ -155,12 +157,12 @@
             </div>
             <div class='fl-center m-t-5'>
               <!-- <div class='fl-1 h-25 w-min-25 m-t-5' id='color-final' style='border-radius: 2px;'></div> -->
-              <small class='p-r-5 w-min-40'>Color</small>
-              <input class='w-full bg-dark' type='color' onchange="setHEX(event)" />
+              <div id='color-picker-final' class='w-full h-25 m-v-5' style='border-radius: 2px;'></div>
             </div>
-            <div class='fl m-t-10'>
+            <div id='color-picker-confirms' class='fl m-t-10'>
               <button class='bord-r-2 bg-red w-full m-r-10' onclick='closeColorPicker()'>Close</button>
-              <button class='bord-r-2 bg-green w-full' onclick='addColor(event)'>Select</button>
+              <button id='color-picker-add' class='bord-r-2 bg-green w-full' onclick='addColor()'>Add</button>
+              <button id='color-picker-change' class='bord-r-2 bg-green w-full' onclick='changeColor()'>Change</button>
             </div>
           </div>
         </div>
@@ -171,6 +173,7 @@
         <div id='canvas-container' class='relative'>
           <canvas id='bg-canvas' style='position: absolute; top: 0; left: 0; z-index: 0;'></canvas>
           <canvas id='main-canvas' style='position: absolute; top: 0; left: 0; z-index: 5;'></canvas>
+          <canvas id='download-canvas' style='display: none;'></canvas>
         </div>
       </div>
     </div>
@@ -225,6 +228,12 @@
 
     <div class='fl-1 fl'>
       <div class='fl-1 fl fl-justify-end'>
+          <button onclick='canvasZoomIn()' style='font-size: 14px;'>
+              <i class="fas fa-eye-dropper"></i>
+              <i class="fas fa-arrow-down"></i>
+              <i class="fas fa-arrow-up"></i>
+          </button>
+          
         <button onclick='canvasZoomIn()' style='font-size: 14px;'>
           <i class="fas fa-search-plus"></i>
         </button>
@@ -246,7 +255,7 @@
         <button data-i="31" data-tllayers="" data-name="name" style="text-align: left;" class="w-full" text="No Name">Name</button>
       </div>
       <div id='tl-frames' class='hide-scrbar fl-1 fl' style='overflow: scroll;'>
-        <button class='hover' style="min-width: 30px; max-width: 30px; font-size: 10px; border-left: 1px solid rgb(61, 61, 61);" id='tl-frames-button' onclick="framesSetActiveDOM(event)" data-i="0">1</button>
+        <button class='hover' style="min-width: 30px; max-width: 30px; font-size: 10px; border-left: 1px solid rgb(61, 61, 61);" id='tl-frames-button' onclick="framesSetActiveDOM(event)" data-i="0" data-frameindex="0">1</button>
       </div>
     </div>
     <div class='fl-1 h-180 fl'>
@@ -306,6 +315,40 @@
         <div class='fl'>
           <button class='bord-r-2 bg-red w-full m-r-10' onclick='modalClose(event)' data-val='rename'>Cancel</button>
           <button class='bord-r-2 bg-green w-full' onclick='layersRename(event)'>Save</button>
+        </div>
+      </div>
+    </div>
+    <div id='export' class='bg-light w-min-250' style='border-radius: 3px; overflow: hidden; border: 1px solid rgb(33, 33, 33); z-index: 5;'>
+      <small class='fl-center m-0 bg-mid bord-dark-b p-v-5'>Download</small>
+      <div id='export-config' class='p-20'>
+        <div class='p-b-10 fl-center'>
+          <div class='fl-1 fl'>
+            <a id="download-1x" download="pixelart.png" class='h-full fl-1 m-r-5' style='display: inline-block;'>
+              <button class='w-full h-full bg-mid b-rad-2 p-10' onclick='canvasDownload(event)' data-scale='1'>1x</button>
+            </a>
+            <a id="download-2x" download="pixelart-2x.png" class='h-full fl-1 m-r-5' style='display: inline-block;'>
+              <button class='w-full h-full bg-mid b-rad-2 p-10' onclick='canvasDownload(event)' data-scale='2'>2x</button>
+            </a>
+            <a id="download-4x" download="pixelart-4x.png" class='h-full fl-1 m-r-5' style='display: inline-block;'>
+              <button class='w-full h-full bg-mid b-rad-2 p-10' onclick='canvasDownload(event)' data-scale='4'>4x</button>
+            </a>
+            <a id="download-8x" download="pixelart-8x.png" class='h-full fl-1 m-r-5' style='display: inline-block;'>
+              <button class='w-full h-full bg-mid b-rad-2 p-10' onclick='canvasDownload(event)' data-scale='8'>8x</button>
+            </a>
+            <a id="download-16x" download="pixelart-16x.png" class='h-full fl-1' style='display: inline-block;'>
+              <button class='w-full h-full bg-mid b-rad-2 p-10' onclick='canvasDownload(event)' data-scale='16'>16x</button>
+            </a>
+          </div>
+        </div>
+        <div class='p-b-20 fl-center'>
+          <div class='fl-1 fl'>
+            <a id="download-spritesheet" download="pixelart.png" class='h-full fl-1 m-r-5' style='display: inline-block;'>
+              <button class='w-full h-full bg-mid b-rad-2 p-10' onclick='canvasDownloadSpritesheet(event)'>Spritesheet</button>
+            </a>
+          </div>
+        </div>
+        <div class='fl'>
+          <button class='bord-r-2 bg-red w-full' onclick='modalClose(event)' data-val='export'>Cancel</button>
         </div>
       </div>
     </div>

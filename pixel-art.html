@@ -1,0 +1,1908 @@
+<html>
+  <style>
+    * { box-sizing: border-box; }
+
+    html {
+      font-weight: 400;
+      letter-spacing: -.05px;
+      -moz-osx-font-smoothing: grayscale;
+      -webkit-font-smoothing: antialiased;
+      font-smoothing: antialiased;
+    }
+
+    a {
+      text-decoration: none;
+    }
+
+    html, body {
+      height: 100%;
+      min-height: 100%;
+      max-height: 100%;
+    }
+
+    input {
+      height: 25px;
+    }
+
+    input[type='text'] {
+      display: inline-block;
+      min-width: 0;
+      background: rgb(40, 40, 40);
+      outline: none;
+      border: none;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 2px;
+      border: 1px solid rgba(255, 255, 255, 0);
+    }
+
+    input[type='text']:focus, select:focus{
+      border: 1px solid rgba(255, 255, 255, .3);
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont,
+        “Segoe UI”, “Roboto”, “Oxygen”,
+        “Ubuntu”, “Cantarell”, “Fira Sans”,
+        “Droid Sans”, “Helvetica Neue”, sans-serif;
+    }
+
+    img, svg, b {
+      pointer-events: none;
+    }
+
+    small {
+      font-size: 12px;
+    }
+
+    small, button, a {
+      color: rgba(255, 255, 255, .9);
+    }
+
+    button {
+      border: none;
+      outline: none;
+      cursor: pointer;
+      background: none;
+      margin: 0;
+    }
+
+    button:hover {
+      background: rgb(100, 100, 100);
+    }
+
+    canvas {
+      image-rendering: -moz-crisp-edges;
+      image-rendering: -webkit-crisp-edges;
+      image-rendering: pixelated;
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+      background-color: rgba(25,25,25);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background-color: rgba(70,70,70);
+    }
+
+    .clickable { cursor: pointer; }
+    .hover-xlight:hover { background: rgb(110, 110, 110); }
+
+    .bg-light { background: rgba(61,61,61); }
+    .bg-mid { background: rgba(50, 50, 50); }
+    .bg-dark { background: rgb(40, 40, 40); }
+    .bg-white { background: rgba(255, 255, 255, .8); }
+
+    .bg-green { background: #27ae60; }
+    .bg-red { background: #e74c3c; }
+
+    .bord-mid { border: 1px solid rgb(43, 43, 43); }
+    .bord-dark { border: 1px solid rgb(33, 33, 33); }
+    .bord-dark-h { border-left: 1px solid rgb(33, 33, 33); border-right: 1px solid rgb(33, 33, 33); }
+    .bord-dark-b { border-bottom: 1px solid rgb(33, 33, 33); }
+    .bord-dark-t { border-top: 1px solid rgb(33, 33, 33); }
+    .bord-dark-l { border-left: 1px solid rgb(33, 33, 33); }
+    .bord-dark-r { border-right: 1px solid rgb(33, 33, 33); }
+
+    .bord-light-b { border-bottom: 1px solid rgba(61,61,61); }
+    .bord-light-l { border-left: 1px solid rgba(61,61,61); }
+
+    .bord-r-2 { border-radius: 2px; }
+
+    .fl-column { display: flex; flex-direction: column;}
+    .flex { display: flex; }
+    .fl-1 { flex: 1; }
+    .fl-2 { flex: 2; }
+    .fl-3 { flex: 3; }
+    .fl-4 { flex: 4; }
+
+    .w-full { width: 100%; }
+    .h-full { height: 100%; }
+    .h-35 { height: 35px; }
+    .h-30 { height: 30px; }
+    .h-25 { height: 25px; }
+
+    .p-h-10 { padding-left: 10px; padding-right: 10px; }
+    .p-v-5 { padding-top: 5px; padding-bottom: 5px; }
+    .p-5 { padding: 5px; }
+    .p-10 { padding: 10px; }
+
+    .b-r-2 { border-radius: 2px; }
+    .flex-center { justify-content: center; align-items: center;}
+    .flex-center-y { align-items: center;}
+  </style>
+  <body class='bg-dark'>
+    <div class='w-full h-35 bg-light bord-dark-b flex'>
+      <div style='min-width: 170px; max-width: 170px;'></div>
+      <div class='fl-1 flex'>
+        <div class='fl-1 flex'>
+          <button class="b-r-2 bord-dark-l bord-dark-r" style="width: 60px;" data-request="openNewCanvas">
+            <img src="img/folder-plus.svg">
+          </button>
+        </div>
+        <div class='fl-1 flex' style='justify-content: center;'>
+          <div class='flex' style='justify-content: center;'>
+            <button class="b-r-2 bord-dark-l bord-dark-r" style="width: 60px;" data-request="undo">
+              <img src="img/undo.svg">
+            </button>
+            <button class="b-r-2  bord-dark-r" style="width: 60px;" data-request="redo">
+              <img src="img/redo.svg">
+            </button>
+          </div>
+        </div>
+        <div class='fl-1 flex' style='justify-content: flex-end;'>
+          <button class="b-r-2 bord-dark-l bord-dark-r" style="width: 60px;" data-request="openDownloadCanvas">
+            <img src="img/download.svg">
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class='flex bord-dark-b' style='height: calc(100% - 240px - 36px);'>
+      <div class='bg-light' style='min-width: 170px; max-width: 170px;'>
+        <div class='bg-mid bord-dark-b p-h-10 p-v-5'>
+          <small><b>Tools</b></small>
+        </div>
+        <div id='tool-list' class='p-5' style='display: flex; justify-content: space-around; flex-wrap: wrap;'>
+          <button class="b-r-2" style="width: 30px; height: 30px;" data-request="selectTool" data-tool='PENCIL'>
+            <img src="img/pencil.svg">
+          </button>
+          <button class="b-r-2" style="width: 30px; height: 30px;" data-request="selectTool" data-tool='ERASER'>
+            <img src="img/eraser.svg">
+          </button>
+          <button class="b-r-2" style="width: 30px; height: 30px;" data-request="selectTool" data-tool='LINE'>
+            <img src="img/line.svg">
+          </button>
+          <button class="b-r-2" style="width: 30px; height: 30px;" data-request="selectTool" data-tool='SQUARE'>
+            <img src="img/square.svg">
+          </button>
+          <button class="b-r-2" style="width: 30px; height: 30px;" data-request="selectTool" data-tool='FILL'>
+            <img src="img/fill.svg">
+          </button>
+          <button class="b-r-2" style="width: 30px; height: 30px;" data-request="selectTool" data-tool='CIRCLE'>
+            <img src="img/circle.svg">
+          </button>
+          <button class="b-r-2" style="width: 30px; height: 30px;" data-request="selectTool" data-tool='SELECT'>
+            <img src="img/select.svg">
+          </button>
+          <button class="b-r-2" style="width: 30px; height: 30px;" data-request="selectTool" data-tool='MOVE'>
+            <img src="img/move.svg">
+          </button>
+          <button class="b-r-2" style="width: 30px; height: 30px; pointer-events: none;"></button>
+          <button class="b-r-2" style="width: 30px; height: 30px; pointer-events: none;"></button>
+        </div>
+        <div style='position: relative;' class='flex bg-mid bord-dark-b bord-dark-t'>
+          <div class='p-h-10 p-v-5 bg-mid fl-1'>
+            <small><b>Colors</b></small>
+          </div>
+          <button class='bord-dark-l bg-light' data-request="changeColor" style='min-width: 30px;'>
+            <img src="img/eye-dropper.svg"/>
+          </button>
+          <div id='color-picker' class='bord-dark bg-light' style='position: absolute; top: -1px; left: 100%; min-width: 225px; max-width: 225px; display: none;'>
+            <div class='bg-mid bord-dark-b' style='display: flex; justify-content: space-between;'>
+              <div class='p-h-10 p-v-5' >
+                <small><b>Color Picker</b></small>
+              </div>
+            </div>
+            <div class='bg-light flex p-h-10 flex-center' style='margin-top: 10px; padding-bottom: 5px; height: 25px;'>
+              <small class='fl-1 flex flex-center-y' style='height: 100%;'><b>Hue</b></small>
+              <div id='hue' class='fl-3 w-full b-r-2 flex' style='position: relative; height: 100%;'>
+                <div class='w-full h-full b-r-2' style='position: absolute; top: 0; left: 0; background: linear-gradient(to right, #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%);'></div>
+                <input class='w-full h-full' value="0" type="range" min="0" max="359" step="1" style='position: absolute; top: 0; left: 0; margin: 0;' />
+              </div>
+            </div>
+            <div class='bg-light flex p-h-10 flex-center' style='margin-top: 5px; padding-bottom: 5px; height: 25px;'>
+              <small class='fl-1 flex flex-center-y'><b>Sat</b></small>
+              <div id='sat' class='fl-3 w-full b-r-2 flex' style='position: relative; height: 100%;'>
+                <div class='w-full h-full b-r-2' style='position: absolute; top: 0; left: 0;'></div>
+                <input class='w-full h-full' value="0" min="0" max="100" step="1" type="range" step="1" style='position: absolute; top: 0; left: 0; margin: 0;' />
+              </div>
+            </div>
+            <div class='bg-light flex p-h-10 flex-center' style='margin-top: 5px; padding-bottom: 5px; height: 25px;'>
+              <small class='fl-1 flex flex-center-y'><b>Light</b></small>
+              <div id='light' class='fl-3 w-full b-r-2 flex' style='position: relative; height: 100%;'>
+                <div class='w-full h-full b-r-2' style='position: absolute; top: 0; left: 0;'></div>
+                <input class='w-full h-full' value="0" min="0" max="100" step="1" type="range" step="1" style='position: absolute; top: 0; left: 0; margin: 0;' />
+              </div>
+            </div>
+            <div class='bg-light flex p-h-10 flex-center' style='margin-top: 5px; padding-bottom: 5px; height: 25px;'>
+              <small class='fl-1 flex flex-center-y'><b>RGB</b></small>
+              <div class='fl-3 w-full b-r-2 flex' style='position: relative;'>
+                <input type='text' id='r' class='w-full fl-1' style='margin-right: 5px;' />
+                <input type='text' id='g' class='w-full fl-1' style='margin-right: 5px;' />
+                <input type='text' id='b' class='w-full fl-1' />
+              </div>
+            </div>
+            <div class='bg-light flex p-h-10' style='padding-top: 5px; padding-bottom: 10px;'>
+              <small class='fl-1 flex flex-center-y'><b>Hex</b></small>
+              <div class='fl-3 w-full b-r-2 flex' style='position: relative; height: 20px;'>
+                <input type='text' id='hex' class='fl-1 w-full' />
+              </div>
+            </div>
+            <div class='bg-light p-h-10' style='margin-top: 5px;'>
+              <button class='w-full h-25 b-r-2' id='final'></button>
+            </div>
+            
+            <div class='bg-light flex p-h-10 fl' style='padding-top: 10px; padding-bottom: 10px;'>
+              <button class='fl-1 h-25 b-r-2 bg-red' data-request='closeColorPicker'><b>Close</b></button>
+              <button class='fl-1 h-25 b-r-2 bg-green' style='margin-left: 10px;' data-request='confirmColor'><b>Select</b></button>
+            </div>
+          </div>
+        </div>
+        <div id='color-list' class='p-5' style='display: flex; justify-content: space-around; flex-wrap: wrap;'>
+          <button style="display: flex; justify-content: center; width: 30px; height: 30px; margin-bottom: 2px; box-shadow: 0px 0px 0px 2px inset rgb(50, 50, 50);">
+            <img src="">
+          </button>
+        </div>
+      </div>
+      <div data-request='paintCanvas' class='p-10' style='width: 100%; height: 100%; overflow: scroll; overflow: overlay; cursor: crosshair;'>
+        <!-- <canvas id='bg-canvas'></canvas> -->
+        <canvas id='main-canvas' style='display: flex; margin: 30px auto; pointer-events: none; user-select: none; -webkit-user-select: none; '></canvas>
+      </div>
+    </div>
+
+    <div class='w-full' style='min-height: 240px; max-height: 240px;'>
+      <div class='w-full bg-light h-30 bord-dark-b flex'>
+        <div class='flex' style='min-width: 170px; max-width: 170px;'>
+          <small class='bg-mid fl-1' style='display: flex; align-items: center; padding-left: 10px;'><b>Layers</b></small>
+          
+        </div>
+        <div class='flex bord-dark-l w-full'>
+          <div class='fl-1 flex'>
+            <small class='bg-mid' style='display: flex; align-items: center; padding-left: 10px; width: 100px;'><b>Frames</b></small>
+            <button class='bord-dark-l' data-request="addFrame" style='min-width: 30px;'>
+              <img src="img/plus.svg"/>
+            </button>
+            <button class='bord-dark-l' data-request="duplicateFrame" style='min-width: 30px;'>
+              <img src="img/clone.svg"/>
+            </button>
+            <button class='bord-dark-l bord-dark-r' data-request="deleteFrame" style='min-width: 30px;'>
+              <img src="img/trash.svg"/>
+            </button>
+          </div>
+          <div class='fl-1 flex' style='justify-content: center;'>
+            <button data-request="previousFrame" style='min-width: 30px;'>
+              <img src="img/lastframe.svg"/>
+            </button>
+            <button data-request="togglePlayFrames" style='min-width: 30px;'>
+              <img src="img/play.svg"/>
+            </button>
+            <button data-request="nextFrame" style='min-width: 30px;'>
+              <img src="img/nextframe.svg"/>
+            </button>
+          </div>
+          <div class='fl-1 flex' style='justify-content: flex-end;'></div>
+          
+
+        </div>
+      </div>
+      <div class='w-full bg-light h-30 bord-dark-b flex'>
+        <div class='flex' style='min-width: 170px; max-width: 170px;'>
+          <button class='bord-dark-l' data-request="deleteLayer" style='min-width: 30px;'>
+            <img src="img/trash.svg"/>
+          </button>
+          <button class='bord-dark-l' data-request="moveLayerUp" style='min-width: 30px;'>
+              <img src="img/up.svg"/>
+          </button>
+          <button class='bord-dark-l' data-request="moveLayerDown" style='min-width: 30px;'>
+            <img src="img/down.svg"/>
+          </button>
+          <button class='bord-dark-l bord-dark-r' data-request="addLayer" style='min-width: 30px;'>
+            <img src="img/plus.svg"/>
+          </button>
+        </div>
+        <div class='fl-1 flex' id='frame-list' style='overflow: scroll; overflow: overlay;'>
+          <button class='bord-light-l' style='min-width: 30px; max-height: 30px;' data-request='selectFrame' data-frame='0'>1</button>
+        </div>
+      </div>
+      <div class='flex'>
+        <div class='bg-light' id='layer-list' style='min-width: 170px; max-width: 170px; min-height: 180px; max-height: 180px; overflow: scroll; overflow: overlay;'>
+          <div class='h-25 flex bord-light-b'>
+            <button data-request="hideLayer" data-layer='0'>
+              <img src="img/eye.svg" />
+            </button>
+            <button data-request="lockLayer" data-layer='0'>
+              <img src="img/unlock.svg" />
+            </button>
+            <button class='w-full hover-xlight' style='text-align: left; font-weight: bold;' data-request="selectLayer" data-layer='0'>
+              Layer 1
+            </button>
+          </div>
+        </div>
+        <div>
+          <canvas class='clickable' id='timeline' data-request="selectGrid"></canvas>
+        </div>
+      </div>
+    </div>
+    <div id='modal-new-canvas' class='w-full h-full flex flex-center' style='position: absolute; top: 0; left: 0; background:rgba(0, 0, 0, .1); visibility: hidden;'>
+      <div class='w-full b-r-2 bord-dark' style='max-width: 350px; overflow: hidden;'>
+        <div class='p-5 bg-mid' style='text-align: center;'>
+          <small><b>New Canvas</b></small>
+        </div>
+        <div class='p-10 bg-light' style='padding-top: 15px;'>
+          <div class='flex p-5'>
+            <small class='fl-1 flex flex-center-y'><b>Dimensions</b></small>
+            <div class='fl-3 w-full b-r-2 flex flex-center' style='position: relative; height: 20px;'>
+              <input type='text' id='width-input' class='w-full fl-1' style='margin-right: 5px;' />
+              <small style='margin-right: 5px;'><b>X</b></small>
+              <input type='text' id='height-input' class='w-full fl-1' style='margin-right: 5px;' />
+            </div>
+          </div>
+          <div class='flex p-5' style='padding-top: 15px;'>
+            <button class='p-5 fl-1 bg-red b-r-2' style='margin-right: 15px;' data-request='closeNewCanvas'><b>Cancel</b></button>
+            <button class='p-5 fl-1 bg-green b-r-2' data-request='newCanvas'><b>Create</b></button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id='modal-download-canvas' class='w-full h-full flex flex-center' style='position: absolute; top: 0; left: 0; background:rgba(0, 0, 0, .1); visibility: hidden;'>
+      <div class='w-full b-r-2 bord-dark' style='max-width: 300px; overflow: hidden;'>
+        <div class='p-5 bg-mid' style='text-align: center;'>
+          <small><b>Download Canvas</b></small>
+        </div>
+        <div class='p-10 bg-light'>
+          <div class='flex p-5'>
+            <small class='fl-1 flex flex-center-y'><b>Scale</b></small>
+            <select id='download-scale' class='fl-3 w-full b-r-2 flex flex-center' style='position: relative; height: 20px;'>
+              <option value='1'>1x</option>
+              <option value='2'>2x</option>
+              <option value='4'>4x</option>
+              <option value='8'>8x</option>
+              <option value='16'>16x</option>
+              <option value='32'>32x</option>
+            </select>
+          </div>
+          <div class='flex p-5'>
+            <small class='fl-1 flex flex-center-y'><b>Type</b></small>
+            <select id='download-type' class='fl-3 w-full b-r-2 flex flex-center' style='position: relative; height: 20px;'>
+              <option value='frame'>Frame</option>
+              <option value='spritesheet'>Spritesheet</option>
+            </select>
+          </div>
+          <div class='flex p-5' style='padding-top: 10px;'>
+            <button class='p-5 fl-1 bg-red b-r-2' style='margin-right: 15px;' data-request='closeDownloadCanvas'><b>Cancel</b></button>
+            <a class='fl-1 b-r-2 clickable flex flex-center bg-green' style='font-size: 12px; text-align: center;' download='pixel-art.png'  data-request='downloadCanvas' style='display: block;'>
+              <b>Download</b>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+  <script type="module">
+  const LAYER_LIST = document.querySelector('#layer-list')
+  const FRAME_LIST = document.querySelector('#frame-list')
+  const TOOL_LIST = document.querySelector('#tool-list')
+  const COLOR_LIST = document.querySelector('#color-list')
+  const MODAL_NEWCANVAS = document.querySelector('#modal-new-canvas')
+  const MODAL_DOWNLOADCANVAS = document.querySelector('#modal-download-canvas')
+  const COLOR_PICKER_DOM = document.querySelector('#color-picker')
+  const TIMELINE = document.querySelector('#timeline')
+  const TIMELINE_CTX = TIMELINE.getContext('2d')
+
+  const DOWNLOADCANVAS = document.createElement('canvas')
+  const OFFSCREEN1 = document.createElement('canvas')
+  const OFFSCREEN2 = document.createElement('canvas')
+  const PREVIEW = document.createElement('canvas')
+  const CANVAS = document.querySelector('#main-canvas')
+
+  const DOWNLOADCANVASCTX = DOWNLOADCANVAS.getContext('2d')
+  const OFFSCREEN1CTX = OFFSCREEN1.getContext('2d')
+  const OFFSCREEN2CTX = OFFSCREEN2.getContext('2d')
+  const CANVASCTX = CANVAS.getContext('2d')
+  const PREVIEWCTX = CANVAS.getContext('2d')
+
+  const MAX_FRAMES = 100
+  const MAX_LAYERS = 32
+  const MAX_COLORS = 35
+
+  let OFFSCREEN1ImgData
+  let PREVIEWImgData
+  let imageData
+
+  const STATE = {}
+
+  STATE.COLORS = [
+    [26, 188, 156, 255],
+    [46, 204, 113, 255],
+    [52, 152, 219, 255],
+    [155, 89, 182, 255],
+    [52, 73, 94, 255],
+    [22, 160, 133, 255],
+    [39, 174, 96, 255],
+    [41, 128, 185, 255],
+    [142, 68, 173, 255],
+    [44, 62, 80, 255],
+    [241, 196, 15, 255],
+    [230, 126, 34, 255],
+    [231, 76, 60, 255],
+    [236, 240, 241, 255],
+    [149, 165, 166, 255],
+    [243, 156, 18, 255],
+    [211, 84, 0, 255],
+    [192, 57, 43, 255],
+    [189, 195, 199, 255],
+    [127, 140, 141, 255] 
+  ]
+
+  const assignRGBATo = (arr1, i1, arr2, i2) => {
+    arr1[i1 + 0] = arr2[i2 + 0]
+    arr1[i1 + 1] = arr2[i2 + 1]
+    arr1[i1 + 2] = arr2[i2 + 2]
+    arr1[i1 + 3] = arr2[i2 + 3]
+  }
+
+  const newCanvas = (w, h) => {
+    STATE.W = w
+    STATE.H = h
+    STATE.LAYER = 0
+    STATE.FRAME = 0
+    STATE.TOOL = 'PENCIL'
+    STATE.COLOR = STATE.COLORS[0]
+    STATE.ISPLAYING = undefined
+
+    STATE.SELECTION = []
+    STATE.EMPTY = new Uint8ClampedArray(STATE.W * STATE.H * 4)
+    STATE.PREVIEW = new Uint8ClampedArray(STATE.W * STATE.H * 4)
+    STATE.FRAMES = [] // let the garbage collector clean up, can optimizie this with staic length ops
+    STATE.FRAMES[0] = [new Uint8ClampedArray(STATE.W * STATE.H * 4)]
+
+    STATE.LAYERS = []
+    STATE.LAYERS = [{ name: 'Layer 1', hidden: false, locked: false }]
+
+    STATE.TRANSPARENCY = new Uint8ClampedArray(STATE.W * STATE.H * 4)
+
+    // Draw Transparency layer
+    for (let x = 0; x < STATE.W; x++) {
+      for (let y = 0; y < STATE.H; y++) {
+        if (y % 2 === 0) {
+          if (x % 2 === 0) {
+            assignRGBATo(STATE.TRANSPARENCY, ((x + STATE.W * y) * 4), [128, 128, 128, 255], 0)
+          } else {
+            assignRGBATo(STATE.TRANSPARENCY, ((x + STATE.W * y) * 4), [211, 211, 211, 255], 0)
+          }
+        } else if (x % 2 !== 0) {
+          assignRGBATo(STATE.TRANSPARENCY, ((x + STATE.W * y) * 4), [128, 128, 128, 255], 0)
+        } else {
+          assignRGBATo(STATE.TRANSPARENCY, ((x + STATE.W * y) * 4), [211, 211, 211, 255], 0)
+        }
+      }
+    }
+
+    const canvasList = [CANVAS, PREVIEW, OFFSCREEN1, OFFSCREEN2, DOWNLOADCANVAS]
+
+    const scaleRatio = (500 / STATE.H)
+
+    canvasList.forEach(canv => {
+      canv['width'] = STATE.W
+      canv['height'] = STATE.H
+      canv['style']['min-width']= `${STATE.W  * scaleRatio}px`
+      canv['style']['min-height'] = `${STATE.H  * scaleRatio}px`
+      canv['style']['max-width']= `${STATE.W  * scaleRatio}px`
+      canv['style']['max-height'] = `${STATE.H  * scaleRatio}px`
+    })
+
+    OFFSCREEN1ImgData = OFFSCREEN1CTX.getImageData(0, 0, STATE.W, STATE.H)
+    PREVIEWImgData = PREVIEWCTX.getImageData(0, 0, STATE.W, STATE.H)
+    imageData = CANVASCTX.getImageData(0, 0, STATE.W, STATE.H)
+  }
+   
+  const startCanvasLoop = () => {
+    let toggle = 0
+    let i = 0
+
+    const loop = () => {
+      toggle = toggle === 0 ? 1 : 0
+
+      if (toggle === 1) {
+        window.requestAnimationFrame(loop)
+        return
+      }
+
+      OFFSCREEN1CTX.clearRect(0, 0, STATE.W, STATE.H)
+      OFFSCREEN2CTX.clearRect(0, 0, STATE.W, STATE.H)
+      PREVIEWCTX.clearRect(0, 0, STATE.W, STATE.H)
+      CANVASCTX.clearRect(0, 0, STATE.W, STATE.H)
+
+      OFFSCREEN1ImgData.data.set(STATE.TRANSPARENCY)
+      OFFSCREEN1CTX.putImageData(OFFSCREEN1ImgData, 0, 0)
+      OFFSCREEN2CTX.drawImage(OFFSCREEN1, 0, 0, STATE.W, STATE.H) // At end draw image to onscreen canvas
+
+      OFFSCREEN1ImgData.data.set(STATE.TRANSPARENCY)
+      OFFSCREEN1CTX.putImageData(OFFSCREEN1ImgData, 0, 0)
+      OFFSCREEN2CTX.drawImage(OFFSCREEN1, 0, 0, STATE.W, STATE.H) // At end draw image to onscreen canvas
+
+      for (let layer = 0; layer < STATE.LAYERS.length; layer++) {
+        if (STATE.LAYERS[layer].hidden) continue
+
+        OFFSCREEN1CTX.clearRect(0, 0, STATE.W, STATE.H)
+        
+        OFFSCREEN1ImgData.data.set(STATE.FRAMES[STATE.FRAME][layer])
+        OFFSCREEN1CTX.putImageData(OFFSCREEN1ImgData, 0, 0)
+        OFFSCREEN2CTX.drawImage(OFFSCREEN1, 0, 0, STATE.W, STATE.H)
+
+        if (layer === STATE.LAYER) {
+          OFFSCREEN1ImgData.data.set(STATE.PREVIEW)
+          OFFSCREEN1CTX.putImageData(OFFSCREEN1ImgData, 0, 0)
+          OFFSCREEN2CTX.drawImage(OFFSCREEN1, 0, 0, STATE.W, STATE.H)
+        }
+      }
+      
+      CANVASCTX.drawImage(OFFSCREEN2, 0, 0) // At end draw image to onscreen canvas
+
+      requestAnimationFrame(loop)
+    }
+
+    loop()
+  }
+
+  const setPoint = (imgData, x, y, w, h, color) => {
+    if (x >= 0 && x < w && y >= 0 && y < h) { // check bounds
+      const i = (x + w * y) * 4
+      assignRGBATo(imgData, i, color, 0)
+    }
+  }
+
+  const line = (startX, startY, endX, endY, func) => {
+    let dx = Math.abs(endX - startX)
+    let dy = Math.abs(endY - startY)
+
+    let xDir = endX - startX >= 0 ? 1 : -1
+    let yDir = endY - startY >= 0 ? 1 : -1
+    
+    let lineX = startX
+    let lineY = startY
+
+    let step = dx >= dy ? dx : dy
+
+    dx = dx / step
+    dy = dy / step
+    
+    let i = 0
+    while (i < step) {
+      func(Math.floor(lineX), Math.floor(lineY))
+
+      lineX += (dx * xDir)
+      lineY += (dy * yDir)
+      i += 1
+    }
+
+    func(Math.floor(lineX), Math.floor(lineY))
+  }
+
+  const circle = (xCenter, yCenter, currX, currY, func) => {
+    let radius = Math.floor(Math.sqrt(Math.pow((currX - xCenter), 2) + Math.pow((currY - yCenter), 2)))
+
+    if (radius <= 0) return
+
+    let x = 0
+    let y = radius
+    let p = 1 - radius
+
+
+    const circlePlot = () => {
+      func(xCenter + x, yCenter + y)
+      func(xCenter + y, yCenter + x)
+      func(xCenter - x, yCenter + y)
+      func(xCenter - y, yCenter + x)
+      func(xCenter + x, yCenter - y)
+      func(xCenter + y, yCenter - x)
+      func(xCenter - x, yCenter - y)
+      func(xCenter - y, yCenter - x)
+    }
+
+    // Plot first set of points
+    circlePlot(xCenter, yCenter, x, y)
+
+    while (x <= y) {
+      x++
+      if (p < 0) {
+        p += 2 * x + 1 // Mid point is inside therefore y remains same
+      } else { // Mid point is outside the circle so y decreases
+        y--
+        p += 2 * (x - y) + 1
+      }
+
+      circlePlot(xCenter, yCenter, x, y)
+    }
+  }
+
+  const areRGBAsEqual = (c1, a, c2, b) => {
+    return (c1[a + 0] === c2[b + 0] && c1[a + 1] === c2[b + 1] && c1[a + 2] === c2[b + 2] && c1[a + 3] === c2[b + 3])
+  }
+
+  const fill = (imgData, w, h, startX, startY, func) => {
+    const around = [
+      {dx: -1, dy: 0}, {dx: 1, dy: 0},
+      {dx: 0, dy: -1}, {dx: 0, dy: 1}
+    ]
+
+    let drawn = [{x: startX, y: startY}]
+    let done = 0
+
+    for (done = 0; done < drawn.length; done++) {
+      for (let pt of around) {
+        let x = drawn[done].x + pt.dx
+        let y = drawn[done].y + pt.dy
+
+        if (
+          x >= 0 && x < w &&
+          y >= 0 && y < h &&
+          areRGBAsEqual(imgData, ((x + w * y) * 4), imgData, ((startX + w * startY) * 4)) &&
+          !drawn.some(p => p.x === x && p.y === y)
+        ) {
+          drawn.push({ x, y })
+        }
+      }
+    }
+
+    for (let draw of drawn) {
+      func(draw.x, draw.y)
+    }
+  }
+
+
+  const blend = (c1, c2) => {
+    let inv = 1.0 / 255.0
+
+    let r1f = (c1[0] || 1) * inv
+    let g1f = (c1[1] || 1) * inv
+    let b1f = (c1[2] || 1) * inv
+    let a1f = (c1[3] || 1) * inv
+
+    let r2f = (c2[0] || 1) * inv
+    let g2f = (c2[1] || 1) * inv
+    let b2f = (c2[2] || 1) * inv
+    let a2f = (c2[3] || 1) * inv
+
+    return [
+      parseInt(r1f * r2f * 255),
+      parseInt(g1f * g2f * 255),
+      parseInt(b1f * b2f * 255),
+      parseInt(a1f * a2f * 255)
+    ]
+  }
+
+  const squareFilled = (startX, startY, endX, endY, func) => {
+    let dx = Math.abs(endX - startX)
+    let dy = Math.abs(endY - startY)
+
+    let xDir = endX - startX >= 0 ? 1 : -1
+    let yDir = endY - startY >= 0 ? 1 : -1
+
+    let lineX = startX
+    let lineY = startY
+
+    let xStep = 0
+    let yStep = 0
+
+    while (xStep <= dx) {
+      yStep = 0
+      lineY = startY
+
+      while (yStep <= dy) {
+        func(lineX, lineY)
+
+        lineY += (1 * yDir)
+        yStep += 1
+      }
+
+      lineX += (1 * xDir)
+      xStep += 1
+    }
+  }
+
+  const square = (startX, startY, endX, endY, func) => {
+    let dx = Math.abs(endX - startX)
+    let dy = Math.abs(endY - startY)
+
+    let xDir = endX - startX >= 0 ? 1 : -1
+    let yDir = endY - startY >= 0 ? 1 : -1
+
+    let lineX = startX
+    let lineY = startY
+    let i = 0
+
+    func(lineX, lineY)
+
+    while (i < dx) {
+      lineX += (1 * xDir)
+      func(lineX, startY)
+      func(lineX, (startY + (dy * yDir)))
+      i += 1
+    }
+
+    i = 0
+
+    while (i < dy) {
+      lineY += (1 * yDir)
+      func(startX, lineY)
+      func((startX + (dx * xDir)), lineY)
+      i += 1
+    }
+  }
+
+  const isRGBAEmpty = (arr, i) => {
+    return (arr[i + 0] || arr[i + 1] || arr[i + 2] || arr[i + 3]) === 0
+  }
+  
+  const initTimeline = () => {
+    const templateLAYER = LAYER_LIST.children[0]
+    const templateFRAME = FRAME_LIST.children[0]
+    let i
+    let clone
+
+    for (i = 1; i < MAX_LAYERS; i++) {
+      clone = templateLAYER.cloneNode(true)
+      clone.style.display = 'none'
+      clone.children[0].dataset.layer = i
+      clone.children[1].dataset.layer = i
+      clone.children[2].dataset.layer = i
+      LAYER_LIST.prepend(clone)
+    }
+
+    for (i = 1; i < MAX_FRAMES; i++) {
+      clone = templateFRAME.cloneNode(true)
+      clone.style.display = 'none'
+      clone.dataset.frame = i
+      clone.innerText = i + 1
+      FRAME_LIST.append(clone)
+    }
+  }
+
+  const initColors = () => {
+    const templateCOLOR = COLOR_LIST.children[0]
+    let i
+    let clone
+
+    for (i = 1; i < MAX_COLORS; i++) {
+      clone = templateCOLOR.cloneNode(true)
+      COLOR_LIST.append(clone)
+    }
+  }
+
+  const updateColors = () => {
+    let i
+    let clone
+
+    for (i = 0; i < MAX_COLORS; i++) {
+      if (STATE.COLORS[i] !== undefined) {
+        COLOR_LIST.children[i].style.visibility = 'visible'
+        COLOR_LIST.children[i].style.background = `rgb(${STATE.COLORS[i][0]}, ${STATE.COLORS[i][1]}, ${STATE.COLORS[i][2]})`
+        COLOR_LIST.children[i].style.border = areRGBAsEqual(STATE.COLORS[i], 0, STATE.COLOR, 0) ? '2px solid #3498db' : '2px solid rgb(60, 60, 60)'
+        COLOR_LIST.children[i].style.boxShadow = areRGBAsEqual(STATE.COLORS[i], 0, STATE.COLOR, 0) ? '0px 0px 0px 3px inset rgb(53, 53, 53)' : '0px 0px 0px 3px inset rgb(53, 53, 53)'
+        COLOR_LIST.children[i].dataset.request = 'selectColor'
+        COLOR_LIST.children[i].dataset.color = JSON.stringify(STATE.COLORS[i])
+        COLOR_LIST.children[i].dataset.index = i
+        COLOR_LIST.children[i].children[0].style.visibility = 'hidden'
+      }
+      // else if (i === STATE.COLORS.length) {
+      //   COLOR_LIST.children[i].style.visibility = 'visible'
+      //   COLOR_LIST.children[i].style.background = `rgb(50, 50, 50)`
+      //   COLOR_LIST.children[i].style.border = '3px solid rgb(60, 60, 60)'
+      //   COLOR_LIST.children[i].style.boxShadow = ''
+      //   COLOR_LIST.children[i].dataset.request = 'addColor'
+      //   COLOR_LIST.children[i].dataset.index = i
+      //   COLOR_LIST.children[i].children[0].style.visibility = 'visible'
+      //   COLOR_LIST.children[i].children[0].src = 'img/plus.svg'
+      // }
+      else {
+        COLOR_LIST.children[i].style.visibility = 'hidden'
+      }
+    }
+  }
+
+  const updateTimeline = () => {
+    let i 
+    let layer = 0
+    for (i = MAX_LAYERS - 1; i >= 0; i--) {
+      if (STATE.LAYERS[layer] !== undefined) {
+        LAYER_LIST.children[i].style.display = 'flex'
+        LAYER_LIST.children[i].style.background = layer === STATE.LAYER ? 'rgb(110, 110, 110)' : ''
+        LAYER_LIST.children[i].children[0].style.background = STATE.LAYERS[layer].hidden ? '#3498db' : 'transparent'
+        LAYER_LIST.children[i].children[0].children[0].src = STATE.LAYERS[layer].hidden ? 'img/eye-active.svg' : 'img/eye.svg'
+        LAYER_LIST.children[i].children[1].style.background = STATE.LAYERS[layer].locked ? '#3498db' : 'transparent'
+        LAYER_LIST.children[i].children[1].children[0].src = STATE.LAYERS[layer].locked ? 'img/lock.svg' : 'img/unlock.svg'
+        LAYER_LIST.children[i].children[2].innerText = STATE.LAYERS[layer].name
+      } else {
+        LAYER_LIST.children[i].style.display = 'none'
+      }
+      
+      layer += 1
+    }
+
+    let frame
+    for (frame = 0; frame < MAX_FRAMES; frame++) {
+      if (STATE.FRAMES[frame] !== undefined) {
+        FRAME_LIST.children[frame].style.display = 'block'
+        FRAME_LIST.children[frame].style.background = frame === STATE.FRAME ? 'rgb(110, 110, 110)' : ''
+      } else {
+        FRAME_LIST.children[frame].style.display = 'none'
+      }
+    }
+
+    const tileWidth = 30
+    const tileHeight = 25
+
+    TIMELINE.width = STATE.FRAMES.length * tileWidth
+    TIMELINE.height = STATE.LAYERS.length * tileHeight
+
+    TIMELINE.style.width = `${TIMELINE.width}px`
+    TIMELINE.style.height = `${TIMELINE.height}px`
+
+    for (let frame = 0; frame < STATE.FRAMES.length; frame++) {
+      for (let layer = 0; layer < STATE.LAYERS.length; layer++) {
+        TIMELINE_CTX.fillStyle = 'rgb(61, 61, 61)'
+
+        if (frame === STATE.FRAME) TIMELINE_CTX.fillStyle = 'rgb(110, 110, 110)'
+        if (layer === STATE.LAYER) TIMELINE_CTX.fillStyle = 'rgb(110, 110, 110)'
+        if (frame === STATE.FRAME && layer === STATE.LAYER) {
+          TIMELINE_CTX.fillStyle = '#3498db'
+        }
+        
+        TIMELINE_CTX.fillRect(
+          (frame * tileWidth) + 1, ((STATE.LAYERS.length - 1) * tileHeight) - (layer * tileHeight), tileWidth - 1, tileHeight - 1
+        )
+      }
+    }
+  }
+
+  const updateTools = () => {
+    let i
+    let tool
+
+    for (i = 0; i < TOOL_LIST.children.length; i++) {
+      tool = TOOL_LIST.children[i]
+
+      if (!tool.dataset.tool) continue
+      
+      tool.style.background = tool.dataset.tool === STATE.TOOL ? '#3498db' : ''
+    }
+  }
+
+  const HISTORY = {
+    POS: -1,
+    STACK: []
+  }
+
+  const pushFrameToHistory = (frames, frame, layer) => {
+    const currBuffer = frames[frame][layer]
+    const newBuffer = new Uint8ClampedArray(currBuffer.length)
+
+    newBuffer.set(currBuffer)
+
+    HISTORY.POS += 1
+
+    HISTORY.STACK.splice(HISTORY.POS, 1, {
+      action: 'frameUpdate',
+      timestamp: Date.now(),
+      data: {
+        frame: frame,
+        layer: layer,
+        buffer: newBuffer
+      }
+    })
+  }
+
+  const historyReset = () => {
+    HISTORY.POS = -1
+    HISTORY.STACK = []
+
+    pushFrameToHistory(STATE.FRAMES, STATE.FRAME, STATE.LAYER)
+  }
+
+  const undo = () => {
+    if (!HISTORY.STACK[HISTORY.POS - 1]) return
+    
+    HISTORY.POS -= 1
+    const entry = HISTORY.STACK[HISTORY.POS]
+
+    if (entry === undefined) return
+
+    if (entry.action === 'frameUpdate') {
+      STATE.FRAME = entry.data.frame
+      STATE.LAYER = entry.data.layer
+
+      const newBuffer = new Uint8ClampedArray(entry.data.buffer.length)
+
+      newBuffer.set(entry.data.buffer)
+
+      STATE.FRAMES[STATE.FRAME][STATE.LAYER].set(newBuffer)
+    }
+  }
+
+  const redo = () => {
+    if (!HISTORY.STACK[HISTORY.POS + 1]) return
+    if (HISTORY.STACK[HISTORY.POS + 1].timestamp < HISTORY.STACK[HISTORY.POS].timestamp) {
+      return
+    }
+
+    HISTORY.POS += 1
+    
+    const entry = HISTORY.STACK[HISTORY.POS]
+    
+    if (entry.action === 'frameUpdate') {
+      STATE.FRAME = entry.data.frame
+      STATE.LAYER = entry.data.layer
+
+      const newBuffer = new Uint8ClampedArray(entry.data.buffer.length)
+
+      newBuffer.set(entry.data.buffer)
+
+      STATE.FRAMES[STATE.FRAME][STATE.LAYER].set(newBuffer)
+    }
+  }
+
+  const RGBtoHSL = (red, green, blue) => {
+    // Make r, g, and b fractions of 1
+    let r = red / 255
+    let g = green / 255
+    let b = blue / 255
+
+    // Find greatest and smallest channel values
+    let cmin = Math.min(r, g, b)
+    let cmax = Math.max(r, g, b)
+    let delta = cmax - cmin
+    let h = 0
+    let s = 0
+    let l = 0
+
+    if (delta === 0) {
+      h = 0
+    } else if (cmax === r) {
+      h = ((g - b) / delta) % 6
+    } else if (cmax === g) {
+      h = (b - r) / delta + 2
+    } else {
+      h = (r - g) / delta + 4
+    }
+
+    h = Math.round(h * 60)
+
+    // Make negative hues positive behind 360°
+    if (h < 0) h += 360
+
+    l = (cmax + cmin) / 2
+
+    // Calculate saturation
+    s = delta === 0 ? 0 : delta / (1 - Math.abs(2 * l - 1))
+
+    // Multiply l and s by 100
+    s = +(s * 100).toFixed(1)
+    l = +(l * 100).toFixed(1)
+
+    return { h, s, l }
+  }
+
+  const RGBtoHEX = (r, g, b) => {
+    r = r.toString(16)
+    g = g.toString(16)
+    b = b.toString(16)
+
+    if (r.length === 1) { r = '0' + r }
+    if (g.length === 1) { g = '0' + g }
+    if (b.length === 1) { b = '0' + b }
+
+    return '#' + r + g + b
+  }
+
+  const HSLtoRGB = (hue, saturation, lightness) => {
+    const h = hue
+    const s = saturation / 100
+    const l = lightness / 100
+
+    let c = (1 - Math.abs(2 * l - 1)) * s
+    let x = c * (1 - Math.abs((hue / 60) % 2 - 1))
+    let m = l - c / 2
+    let r = 0
+    let g = 0
+    let b = 0
+
+    if (h >= 0 && h < 60) {
+      r = c; g = x; b = 0
+    } else if (h >= 60 && h < 120) {
+      r = x; g = c; b = 0
+    } else if (h >= 120 && h < 180) {
+      r = 0; g = c; b = x
+    } else if (h >= 180 && h < 240) {
+      r = 0; g = x; b = c
+    } else if (h >= 240 && h < 300) {
+      r = x; g = 0; b = c
+    } else if (h >= 300 && h < 360) {
+      r = c; g = 0; b = x
+    }
+
+    r = Math.round((r + m) * 255)
+    g = Math.round((g + m) * 255)
+    b = Math.round((b + m) * 255)
+
+    return { r, g, b }
+  }
+
+
+  const C_PICKER = Object.seal({
+    isOpen: false, indexToModify: 0, r: 0, g: 0, b: 0, h: 0, s: 50, l: 50, hex: ''
+  })
+
+  const C_PICKER_DOM = {
+    h: COLOR_PICKER_DOM.querySelector('#hue'),
+    s: COLOR_PICKER_DOM.querySelector('#sat'),
+    l: COLOR_PICKER_DOM.querySelector('#light'),
+    r: COLOR_PICKER_DOM.querySelector('#r'),
+    g: COLOR_PICKER_DOM.querySelector('#g'),
+    b: COLOR_PICKER_DOM.querySelector('#b'),
+    hex: COLOR_PICKER_DOM.querySelector('#hex'),
+    final: COLOR_PICKER_DOM.querySelector('#final')
+  }
+
+  const resetColorPicker = () => {
+    C_PICKER.isOpen = false
+    C_PICKER.indexToModify = 0
+    C_PICKER.r = 0
+    C_PICKER.g = 0
+    C_PICKER.b = 0
+    C_PICKER.h = 0
+    C_PICKER.s = 50
+    C_PICKER.l = 50
+    C_PICKER.hex = ''
+  }
+
+  const updateColorPicker = () => {
+    COLOR_PICKER_DOM.style.display = C_PICKER.isOpen ? 'inline-block' : 'none'
+    
+    C_PICKER_DOM.h.children[1].value = C_PICKER.h
+    
+    C_PICKER_DOM.s.children[0].style.background = `
+      linear-gradient(to right,
+        hsl(${C_PICKER.h}, 0%, 50%) 0%,
+        hsl(${C_PICKER.h}, 100%, 50%) 100%)`
+    C_PICKER_DOM.s.children[1].value = C_PICKER.s    
+    
+    C_PICKER_DOM.l.children[0].style.background = `
+      linear-gradient(to right,
+        hsl(${C_PICKER.h}, 100%, 0%) 0%,
+        hsl(${C_PICKER.h}, 100%, 50%) 50%,
+        hsl(${C_PICKER.h}, 100%, 100%) 100%)`
+    C_PICKER_DOM.l.children[1].value = C_PICKER.l
+    
+    C_PICKER_DOM.r.value = C_PICKER.r
+    C_PICKER_DOM.g.value = C_PICKER.g
+    C_PICKER_DOM.b.value = C_PICKER.b
+
+    C_PICKER_DOM.hex.value = C_PICKER.hex
+
+    C_PICKER_DOM.final.style.background = `rgb(${C_PICKER.r}, ${C_PICKER.g}, ${C_PICKER.b})`
+  }
+
+  const updateHSLVals = () => {
+    const rgb = HSLtoRGB(C_PICKER.h, C_PICKER.s, C_PICKER.l)
+    const hex = RGBtoHEX(rgb.r, rgb.g, rgb.b)
+
+
+    C_PICKER.r = rgb.r
+    C_PICKER.g = rgb.g
+    C_PICKER.b = rgb.b
+    C_PICKER.hex = hex
+
+    updateColorPicker()
+  }
+
+  const updateRGBVals = () => {
+    if (C_PICKER.r > 255) C_PICKER.r = 255
+    if (C_PICKER.r < 0) C_PICKER.r = 0
+    if (C_PICKER.g > 255) C_PICKER.r = 255
+    if (C_PICKER.g < 0) C_PICKER.r = 0
+    if (C_PICKER.b > 255) C_PICKER.r = 255
+    if (C_PICKER.b < 0) C_PICKER.r = 0
+
+    const hsl = RGBtoHSL(C_PICKER.r, C_PICKER.g, C_PICKER.b)
+    const hex = RGBtoHEX(C_PICKER.r, C_PICKER.g, C_PICKER.b)
+
+    C_PICKER.h = hsl.h
+    C_PICKER.s = hsl.s
+    C_PICKER.l = hsl.l
+    C_PICKER.hex = hex
+
+    updateColorPicker()
+  }
+
+  C_PICKER_DOM.h.children[1].addEventListener('input', (e) => {
+    C_PICKER.h = parseInt(e.target.value)
+
+    updateHSLVals()
+  })
+
+  C_PICKER_DOM.s.children[1].addEventListener('input', (e) => {
+    C_PICKER.s = parseInt(e.target.value)
+
+    updateHSLVals()
+  })
+
+  C_PICKER_DOM.l.children[1].addEventListener('input', (e) => {
+    C_PICKER.l = parseInt(e.target.value)
+
+    updateHSLVals()
+  })
+
+
+
+  C_PICKER_DOM.r.addEventListener('keyup', (e) => {
+    if (isNaN(parseInt(e.key))) return
+
+    C_PICKER.r = parseInt(e.target.value) || 0
+    C_PICKER.g = parseInt(C_PICKER_DOM.g.value) || 0
+    C_PICKER.b = parseInt(C_PICKER_DOM.b.value) || 0
+
+    updateRGBVals()
+  })
+
+  C_PICKER_DOM.g.addEventListener('keyup', (e) => {
+    if (isNaN(parseInt(e.key))) return
+
+    C_PICKER.r = parseInt(C_PICKER_DOM.r.value) || 0
+    C_PICKER.g = parseInt(e.target.value) || 0
+    C_PICKER.b = parseInt(C_PICKER_DOM.b.value) || 0
+
+    updateRGBVals()
+  })
+
+  C_PICKER_DOM.b.addEventListener('keyup', (e) => {
+    if (isNaN(parseInt(e.key))) return
+
+    C_PICKER.r = parseInt(C_PICKER_DOM.r.value) || 0
+    C_PICKER.g = parseInt(C_PICKER_DOM.g.value) || 0
+    C_PICKER.b = parseInt(e.target.value) || 0
+
+    updateRGBVals()
+  })
+
+  const initColorPicker = () => {
+    C_PICKER.r = STATE.COLOR[0]
+    C_PICKER.g = STATE.COLOR[1]
+    C_PICKER.b = STATE.COLOR[2]
+
+    const hsl = RGBtoHSL(C_PICKER.r, C_PICKER.g, C_PICKER.b)
+
+    C_PICKER.h = hsl.h
+    C_PICKER.s = hsl.s
+    C_PICKER.l = hsl.l
+
+    C_PICKER.hex = RGBtoHEX(C_PICKER.r, C_PICKER.g, C_PICKER.b)
+
+    updateColorPicker()
+  }
+
+
+  const main = () => {
+    initTimeline()
+    initColors()
+
+    newCanvas(50, 50)
+    startCanvasLoop()
+
+    updateTimeline()
+    updateTools()
+    updateColors()
+
+    pushFrameToHistory(STATE.FRAMES, STATE.FRAME, STATE.LAYER)
+    initColorPicker() 
+  }
+
+  
+
+  window.addEventListener('load', (e) => {
+    main()
+  })
+
+  window.addEventListener('beforeunload', function (e) {
+    // Cancel the event
+    e.preventDefault();
+    // Chrome requires returnValue to be set
+    e.returnValue = '';
+  });
+
+
+    // ----- WINDOW ------ //
+
+
+  const WINDOW = {}
+
+  const resetWindow = () => {
+    WINDOW.REQUEST = ''
+    WINDOW.DATASET = {}
+    WINDOW.MOUSE_DOWN = false
+    WINDOW.START_X = 0
+    WINDOW.START_Y = 0
+    WINDOW.PREV_X = 0
+    WINDOW.PREV_Y = 0
+    WINDOW.CURR_X = 0
+    WINDOW.CURR_Y = 0
+  }
+
+  resetWindow()
+
+  const handleEvents = (e) => {
+    if (WINDOW.REQUEST === 'togglePlayFrames') {
+      if (e.type === 'mouseup') {
+        if (STATE.ISPLAYING === undefined) {
+          STATE.FRAME = (STATE.FRAME + 1) % STATE.FRAMES.length
+          updateTimeline()
+
+          STATE.ISPLAYING = setInterval(() => {
+            STATE.FRAME = (STATE.FRAME + 1) % STATE.FRAMES.length
+            updateTimeline()
+          }, 300)
+        } else {
+          clearInterval(STATE.ISPLAYING)
+          STATE.ISPLAYING = undefined
+        }
+      }
+
+      return
+    }
+
+    if (STATE.ISPLAYING !== undefined) return 
+    
+    if (e.target.dataset.request !== 'paintCanvas') {
+      STATE.PREVIEW.set(STATE.EMPTY)
+    }
+
+    if (e.target.dataset.request === 'paintCanvas' && STATE.TOOL !== 'MOVE' && STATE.TOOL !== 'SELECT') {
+      STATE.PREVIEW.set(STATE.EMPTY)
+
+      const scaleX = CANVAS.clientWidth / CANVAS.width
+      const scaleY = CANVAS.clientHeight / CANVAS.height
+      const bb = CANVAS.getBoundingClientRect()
+      const currX = Math.floor((WINDOW.CURR_X - bb.x) / scaleX)
+      const currY = Math.floor((WINDOW.CURR_Y - bb.y) / scaleY)
+
+      setPoint(
+        STATE.PREVIEW,
+        currX,
+        currY,
+        STATE.W,
+        STATE.H,
+        STATE.COLOR
+      )
+    }
+    
+    if (WINDOW.REQUEST === 'paintCanvas') {
+      if (STATE.LAYERS[STATE.LAYER].locked || STATE.LAYERS[STATE.LAYER].hidden) {
+        return
+      }
+      // CANVAS specific, transforming points to canvas 
+      const scaleX = CANVAS.clientWidth / CANVAS.width
+      const scaleY = CANVAS.clientHeight / CANVAS.height
+      const bb = CANVAS.getBoundingClientRect()
+
+      const startX = Math.floor((WINDOW.START_X - bb.x) / scaleX)
+      const startY = Math.floor((WINDOW.START_Y - bb.y) / scaleY)
+      const prevX = Math.floor((WINDOW.PREV_X - bb.x) / scaleX)
+      const prevY = Math.floor((WINDOW.PREV_Y - bb.y) / scaleY)
+      const currX = Math.floor((WINDOW.CURR_X - bb.x) / scaleX)
+      const currY = Math.floor((WINDOW.CURR_Y - bb.y) / scaleY)
+
+      STATE.PREVIEW.set(STATE.EMPTY)
+
+      if (STATE.TOOL === 'PENCIL' || STATE.TOOL === 'ERASER') {
+        line(prevX, prevY, currX, currY, (x, y) => {
+          console.log(STATE.FRAME, STATE.LAYER)
+          setPoint(
+            STATE.FRAMES[STATE.FRAME][STATE.LAYER],
+            x,
+            y,
+            STATE.W,
+            STATE.H,
+            STATE.TOOL === 'PENCIL' ? STATE.COLOR : [0, 0, 0, 0]
+          )
+        }) 
+
+        if (e.type === 'mouseup') {
+          pushFrameToHistory(STATE.FRAMES, STATE.FRAME, STATE.LAYER)
+        }
+      }
+
+      if (STATE.TOOL === 'LINE') {
+        line(startX, startY, currX, currY, (x, y) => {
+          setPoint(
+            e.type === 'mouseup' ? STATE.FRAMES[STATE.FRAME][STATE.LAYER] : STATE.PREVIEW,
+            x,
+            y,
+            STATE.W,
+            STATE.H,
+            STATE.COLOR
+          )
+        })
+
+        if (e.type === 'mouseup') {
+          pushFrameToHistory(STATE.FRAMES, STATE.FRAME, STATE.LAYER)
+        }
+      }
+
+      if (STATE.TOOL === 'SQUARE') {
+        square(startX, startY, currX, currY, (x, y) => {
+          setPoint(
+            e.type === 'mouseup' ? STATE.FRAMES[STATE.FRAME][STATE.LAYER] : STATE.PREVIEW,
+            x,
+            y,
+            STATE.W,
+            STATE.H,
+            STATE.COLOR
+          )
+        })
+
+        if (e.type === 'mouseup') {
+          pushFrameToHistory(STATE.FRAMES, STATE.FRAME, STATE.LAYER)
+        }
+      }
+
+      if (STATE.TOOL === 'CIRCLE') {
+        circle(startX, startY, currX, currY, (x, y) => {
+          setPoint(
+            e.type === 'mouseup' ? STATE.FRAMES[STATE.FRAME][STATE.LAYER] : STATE.PREVIEW,
+            x,
+            y,
+            STATE.W,
+            STATE.H,
+            STATE.COLOR
+          )
+        })
+
+        if (e.type === 'mouseup') {
+          pushFrameToHistory(STATE.FRAMES, STATE.FRAME, STATE.LAYER)
+        }
+      }
+
+      if (STATE.TOOL === 'FILL') {
+        fill(STATE.FRAMES[STATE.FRAME][STATE.LAYER], STATE.W, STATE.H, currX, currY, (x, y) => {
+          setPoint(
+            STATE.FRAMES[STATE.FRAME][STATE.LAYER],
+            x,
+            y,
+            STATE.W,
+            STATE.H,
+            STATE.COLOR
+          )
+        })
+
+        if (e.type === 'mouseup') {
+          pushFrameToHistory(STATE.FRAMES, STATE.FRAME, STATE.LAYER)
+        }
+      }
+
+      if (STATE.TOOL === 'SELECT') {
+        const frame = STATE.FRAMES[STATE.FRAME][STATE.LAYER]
+
+        if (WINDOW.MOUSE_DOWN) {
+          squareFilled(startX, startY, currX, currY, (x, y) => {
+            const pixel = (x + STATE.W * y) * 4
+            const color = [frame[pixel + 0], frame[pixel + 1], frame[pixel + 2], frame[pixel + 3]]
+
+            setPoint(
+              STATE.PREVIEW,
+              x,
+              y,
+              STATE.W,
+              STATE.H,
+              isRGBAEmpty(color, 0)
+                ? [50, 50, 50, 100]
+                : blend(color, [200, 200, 200, 255])
+            )
+          })
+        }
+
+        if (WINDOW.MOUSE_DOWN && e.type === 'mouseup') {
+          squareFilled(startX, startY, currX, currY, (x, y) => {
+            const pixel = (x + STATE.W * y) * 4
+            const color = [frame[pixel + 0], frame[pixel + 1], frame[pixel + 2], frame[pixel + 3]]
+
+            STATE.SELECTION.push({ x, y, color })
+          })
+
+          WINDOW.MOUSE_DOWN = false
+          STATE.TOOL = 'MOVE'
+        }
+      }
+
+      if (STATE.TOOL === 'MOVE') {
+        const frame = STATE.FRAMES[STATE.FRAME][STATE.LAYER]
+        let xStep = currX - prevX
+        let yStep = currY - prevY
+
+        const selectedToPreview = (pt) => {
+          const pixel = (pt.x + STATE.W * pt.y) * 4
+          const color = [frame[pixel + 0], frame[pixel + 1], frame[pixel + 2], frame[pixel + 3]]
+
+          setPoint(
+            STATE.PREVIEW,
+            pt.x,
+            pt.y,
+            STATE.W,
+            STATE.H,
+            isRGBAEmpty(pt.color, 0)
+              ? isRGBAEmpty(color, 0) ? [50, 50, 50, 100] : blend(color, [200, 200, 200, 255])
+              : blend(pt.color, [200, 200, 200, 255])
+          )
+        }
+
+        if (e.type === 'mousedown') {
+          // Fill with the whole frame if not pre buffered selection exists
+          if (STATE.SELECTION.length === 0) {
+            squareFilled(0, 0, STATE.W - 1, STATE.H - 1, (x, y) => {
+              const pixel = (x + STATE.W * y) * 4
+              const color = [frame[pixel + 0], frame[pixel + 1], frame[pixel + 2], frame[pixel + 3]]
+
+              STATE.SELECTION.push({ x, y, color })
+            })
+          }
+
+          for (let pt of STATE.SELECTION) {
+            selectedToPreview(pt)
+            setPoint(frame, pt.x, pt.y, STATE.W, STATE.H, [0, 0, 0, 0])
+          }
+        }
+
+        if (WINDOW.MOUSE_DOWN) {
+          for (let pt of STATE.SELECTION) {
+            pt.x += xStep
+            pt.y += yStep
+
+            selectedToPreview(pt)
+          }
+        }
+
+        if (WINDOW.MOUSE_DOWN && e.type === 'mouseup') {
+          for (let pt of STATE.SELECTION) {
+            pt.x += xStep
+            pt.y += yStep
+
+            const pixel = (pt.x + STATE.W * pt.y) * 4
+            const color = [frame[pixel + 0], frame[pixel + 1], frame[pixel + 2], frame[pixel + 3]]
+
+            if (!isRGBAEmpty(pt.color, 0)){
+              setPoint(frame, pt.x, pt.y, STATE.W, STATE.H, pt.color)
+            }
+          }
+
+          // Clean up
+          STATE.PREVIEW.set(STATE.EMPTY) 
+          STATE.SELECTION = []
+
+          if (e.type === 'mouseup') {
+            pushFrameToHistory(STATE.FRAMES, STATE.FRAME, STATE.LAYER)
+          }
+
+          WINDOW.MOUSE_DOWN = false
+          // post event actions
+        }
+      }
+    }
+
+    if (WINDOW.REQUEST === 'addLayer') {
+      if (e.type === 'mouseup') {
+        STATE.LAYERS.splice(STATE.LAYER + 1, 0, { name: `Layer ${STATE.LAYERS.length + 1}`, hidden: false, locked: false })
+
+        for (let frame of STATE.FRAMES) {
+          const newLayer = new Uint8ClampedArray(STATE.W * STATE.H * 4)
+          frame.splice(STATE.LAYER + 1, 0, new Uint8ClampedArray(STATE.W * STATE.H * 4))
+        }
+        
+        STATE.LAYER += 1
+
+        console.log(STATE.FRAMES)
+
+        updateTimeline()
+        historyReset()
+      }      
+    }
+
+    if (WINDOW.REQUEST === 'addFrame') {
+      if (e.type === 'mouseup') {
+        const emptyFrame = new Array(STATE.LAYERS.length)
+
+        for (let layer = 0; layer < emptyFrame.length; layer++) {
+          emptyFrame[layer] = new Uint8ClampedArray(STATE.W * STATE.H * 4)
+        }
+        
+        STATE.FRAMES.splice(STATE.FRAME + 1, 0, emptyFrame)
+        STATE.FRAME += 1
+
+        updateTimeline()
+        historyReset()
+      }      
+    }
+
+    if (WINDOW.REQUEST === 'deleteLayer') {
+      if (e.type === 'mouseup') {
+        STATE.FRAMES[STATE.FRAME][STATE.LAYER].set(STATE.EMPTY)
+
+        if (STATE.LAYER === 0) {
+          STATE.LAYERS[STATE.LAYER].name = 'Layer 1'
+          STATE.LAYERS[STATE.LAYER].hidden = false
+          STATE.LAYERS[STATE.LAYER].locked = false
+          updateTimeline()
+          return
+        } 
+        
+        STATE.LAYERS.splice(STATE.LAYER , 1)
+        STATE.LAYER -= 1
+
+        updateTimeline()
+        historyReset()
+      }      
+    }
+
+    if (WINDOW.REQUEST === 'deleteFrame') {
+      if (e.type === 'mouseup') {
+        if (STATE.FRAME === 0) {
+          STATE.FRAMES[0] = new Array(STATE.LAYERS.length)
+          
+          for (let layer = 0; layer < STATE.FRAMES[0].length; layer++) {
+            emptyFrame[layer] = new Uint8ClampedArray(STATE.W * STATE.H * 4)
+          }
+
+          updateTimeline()
+          return
+        } 
+        
+        STATE.FRAMES.splice(STATE.FRAME, 1)
+        STATE.FRAME -= 1
+
+        updateTimeline()
+        historyReset()
+      }      
+    }
+
+    if (WINDOW.REQUEST === 'duplicateFrame') {
+      if (e.type === 'mouseup') {
+        const emptyFrame = new Array(STATE.LAYERS.length)
+
+        for (let layer = 0; layer < emptyFrame.length; layer++) {
+          emptyFrame[layer] = new Uint8ClampedArray(STATE.W * STATE.H * 4)
+        }
+        
+        STATE.FRAMES.splice(STATE.FRAME + 1, 0, emptyFrame)
+        STATE.FRAME += 1
+
+        for (let layer = 0; layer < STATE.LAYERS.length; layer++) {
+          STATE.FRAMES[STATE.FRAME][layer].set(STATE.FRAMES[STATE.FRAME - 1][layer])
+        }
+
+        updateTimeline()
+        historyReset()
+      }      
+    }
+
+    if (WINDOW.REQUEST === 'moveLayerUp' || WINDOW.REQUEST === 'moveLayerDown') {
+      if (e.type === 'mouseup') {
+        const increment = WINDOW.REQUEST === 'moveLayerUp' ? 1 : -1
+        
+        if (STATE.LAYERS[STATE.LAYER + increment]) {
+          const temp = STATE.LAYERS[STATE.LAYER]
+          STATE.LAYERS[STATE.LAYER] = STATE.LAYERS[STATE.LAYER + increment]
+          STATE.LAYERS[STATE.LAYER + increment] = temp
+
+          for (let frame of STATE.FRAMES) {
+            const temp = frame[STATE.LAYER]
+            frame[STATE.LAYER]= frame[STATE.LAYER + increment]
+            frame[STATE.LAYER + increment] = temp
+          }
+
+          STATE.LAYER = STATE.LAYER + increment
+
+          updateTimeline()
+          historyReset()
+        }
+      }      
+    }
+
+    if (WINDOW.REQUEST === 'previousFrame') {
+      if (e.type === 'mouseup') {
+        if (STATE.ISPLAYING !== undefined) return // prevent button click during animation
+
+        STATE.FRAME = STATE.FRAME - 1 === -1 ? (STATE.FRAMES.length - 1) : STATE.FRAME - 1
+        
+        updateTimeline()
+        historyReset()
+      }
+    }
+
+    if (WINDOW.REQUEST === 'nextFrame') {
+      if (e.type === 'mouseup') {
+        if (STATE.ISPLAYING !== undefined) return // prevent button click during animation
+
+        STATE.FRAME = (STATE.FRAME + 1) % STATE.FRAMES.length
+        
+        updateTimeline()
+        historyReset()
+      }
+    }
+
+    if (WINDOW.REQUEST === 'lockLayer') {
+      if (e.type === 'mouseup') {
+        const i = parseInt(e.target.dataset.layer)
+        STATE.LAYERS[i].locked = !STATE.LAYERS[i].locked
+
+        updateTimeline()
+      }      
+    }
+
+    if (WINDOW.REQUEST === 'hideLayer') {
+      if (e.type === 'mouseup') {
+        const i = parseInt(e.target.dataset.layer)
+        STATE.LAYERS[i].hidden = !STATE.LAYERS[i].hidden
+
+        updateTimeline()
+      }      
+    }
+
+    if (WINDOW.REQUEST === 'selectGrid') {
+      if (e.type === 'mouseup') {
+        const scaleX = TIMELINE.clientWidth / TIMELINE.width
+        const scaleY = TIMELINE.clientHeight / TIMELINE.height
+        const bb = TIMELINE.getBoundingClientRect()
+        const frame = Math.floor((WINDOW.CURR_X - bb.x) / 30)
+        const layer = (STATE.LAYERS.length - 1) - Math.floor((WINDOW.CURR_Y - bb.y) / 25)
+
+        if (frame >= 0 && frame < STATE.FRAMES.length && layer >= 0 && layer < STATE.LAYERS.length) {
+          STATE.LAYER = parseInt(layer)
+          STATE.FRAME = parseInt(frame)
+          
+          updateTimeline()
+          historyReset()
+        }
+      }      
+    }
+
+    if (WINDOW.REQUEST === 'selectLayer') {
+      if (e.type === 'mouseup') {
+        STATE.LAYER = parseInt(WINDOW.DATASET.layer) 
+        
+        updateTimeline()
+        historyReset()
+      }      
+    }
+
+    if (WINDOW.REQUEST === 'selectFrame') {
+      if (e.type === 'mouseup') {
+        STATE.FRAME = parseInt(WINDOW.DATASET.frame) 
+        
+        updateTimeline()
+        historyReset()
+      }      
+    }
+    
+    if (WINDOW.REQUEST === 'selectTool') {
+      if (e.type === 'mouseup') {
+        STATE.TOOL = WINDOW.DATASET.tool
+
+        updateTools()
+      }      
+    }
+
+    if (WINDOW.REQUEST === 'selectColor') {
+      if (e.type === 'mouseup') {
+        STATE.COLOR = JSON.parse(WINDOW.DATASET.color)
+
+        updateColors()
+      }      
+    }
+
+    if (WINDOW.REQUEST === 'addColor') {
+      if (e.type === 'mouseup') {
+        C_PICKER.indexToModify = parseInt(WINDOW.DATASET.index)
+        C_PICKER.isOpen = true
+        
+        updateColorPicker()
+      }      
+    }
+
+    if (WINDOW.REQUEST === 'changeColor') {
+      if (e.type === 'mouseup') {
+        let i
+
+        for (i = 0; i < STATE.COLORS.length; i++) {
+          if (areRGBAsEqual(STATE.COLORS[i], 0, STATE.COLOR, 0)) {
+            break
+          }
+        }
+
+        C_PICKER.indexToModify = i
+        C_PICKER.isOpen = true
+
+        C_PICKER.r = STATE.COLORS[i][0]
+        C_PICKER.g = STATE.COLORS[i][1]
+        C_PICKER.b = STATE.COLORS[i][2]
+
+        updateRGBVals()
+      }      
+    }
+
+    if (WINDOW.REQUEST === 'confirmColor') {
+      if (e.type === 'mouseup') {
+        for (let color of STATE.COLORS) {
+          if (areRGBAsEqual(color, 0, [C_PICKER.r, C_PICKER.g, C_PICKER.b, 255], 0)) {
+            resetColorPicker()
+            updateRGBVals()
+            
+            return
+          }
+        }
+        
+        STATE.COLORS.splice(
+          C_PICKER.indexToModify,
+          C_PICKER.indexToModify === STATE.COLORS.length ? 0 : 1,
+          [C_PICKER.r, C_PICKER.g, C_PICKER.b, 255]
+        )
+
+        STATE.COLOR =  STATE.COLORS[C_PICKER.indexToModify]
+        
+        updateColors()
+
+        resetColorPicker()
+        updateRGBVals()
+      }      
+    }
+
+    if (WINDOW.REQUEST === 'closeColorPicker') {
+      if (e.type === 'mouseup') {
+        C_PICKER.isOpen = false
+        updateColorPicker()
+      }
+    }
+
+    if (WINDOW.REQUEST === 'undo') {
+      if (e.type === 'mouseup') {
+        undo()
+      }      
+    }
+
+    if (WINDOW.REQUEST === 'redo') {
+      if (e.type === 'mouseup') {
+        redo()
+      }      
+    }
+
+    if (WINDOW.REQUEST === 'openNewCanvas') {
+      if (e.type === 'mouseup') {
+        MODAL_NEWCANVAS.style.visibility = 'visible'
+      }
+    }
+
+    if (WINDOW.REQUEST === 'newCanvas') {
+      if (e.type === 'mouseup') {
+        let w = parseInt(MODAL_NEWCANVAS.querySelector('#width-input').value) || 50
+        let h = parseInt(MODAL_NEWCANVAS.querySelector('#height-input').value) || 50
+
+        if (w >= 250) w = 200
+        if (w <= 0) w = 1
+        if (h >= 250) h = 200
+        if (h <= 0) h = 1
+
+        newCanvas(w, h)
+
+        historyReset()
+        updateTimeline()
+        updateTools()
+        updateColors()
+
+        MODAL_NEWCANVAS.style.visibility = 'hidden'
+      }
+    }
+
+    if (WINDOW.REQUEST === 'closeNewCanvas') {
+      if (e.type === 'mouseup') {
+        MODAL_NEWCANVAS.style.visibility = 'hidden'
+      }
+    }
+    
+    if (WINDOW.REQUEST === 'openDownloadCanvas') {
+      if (e.type === 'mouseup') {
+        MODAL_DOWNLOADCANVAS.style.visibility = 'visible'
+      }
+    }
+
+    if (WINDOW.REQUEST === 'closeDownloadCanvas') {
+      if (e.type === 'mouseup') {
+        MODAL_DOWNLOADCANVAS.style.visibility = 'hidden'
+      }
+    }
+
+    if (WINDOW.REQUEST === 'downloadCanvas') {
+      if (e.type === 'mouseup') {
+        DOWNLOADCANVAS.width = STATE.W
+        DOWNLOADCANVAS.height = STATE.H
+        
+        const scale = parseInt(MODAL_DOWNLOADCANVAS.querySelector('#download-scale').value)
+        const type = MODAL_DOWNLOADCANVAS.querySelector('#download-type').value
+
+        DOWNLOADCANVAS.width *= scale
+        DOWNLOADCANVAS.height *= scale
+
+        const renderFrame = (frame, x, y, width, height) => {
+          for (let layer = 0; layer < STATE.LAYERS.length; layer++) {
+            OFFSCREEN1CTX.clearRect(0, 0, STATE.W, STATE.H)
+            OFFSCREEN1ImgData.data.set(frame[layer])
+            OFFSCREEN1CTX.putImageData(OFFSCREEN1ImgData, 0, 0)
+            DOWNLOADCANVASCTX.webkitImageSmoothingEnabled = false
+            DOWNLOADCANVASCTX.mozImageSmoothingEnabled = false
+            DOWNLOADCANVASCTX.imageSmoothingEnabled = false
+            DOWNLOADCANVASCTX.drawImage(OFFSCREEN1, x, y, width, height)
+          }
+        }
+
+        if (type === 'frame') {
+          renderFrame(STATE.FRAMES[STATE.FRAME], 0, 0, DOWNLOADCANVAS.width, DOWNLOADCANVAS.height)
+        }
+
+        if (type === 'spritesheet') {
+          const w = DOWNLOADCANVAS.width
+          DOWNLOADCANVAS.width *= STATE.FRAMES.length
+
+          for (let frame = 0; frame < STATE.FRAMES.length; frame++) {
+            renderFrame(STATE.FRAMES[frame], frame * w, 0, w, DOWNLOADCANVAS.height)
+          }
+        }
+
+        const image = DOWNLOADCANVAS.toDataURL('image/png').replace('image/png', 'image/octet-stream')
+        e.target.setAttribute('href', image)
+      }
+    }
+  }
+
+  CANVAS.parentNode.addEventListener('contextmenu', (e) => {
+    e.preventDefault()
+  })
+
+  window.addEventListener('mousedown', (e) => {
+    WINDOW.REQUEST = e.target.dataset.request
+    WINDOW.DATASET = e.target.dataset
+    WINDOW.MOUSE_DOWN = true
+    WINDOW.START_X = e.pageX
+    WINDOW.START_Y = e.pageY
+    WINDOW.PREV_X = e.pageX
+    WINDOW.PREV_Y = e.pageY
+    WINDOW.CURR_X = e.pageX
+    WINDOW.CURR_Y = e.pageY
+
+    handleEvents(e)
+  })
+
+  window.addEventListener('mousemove', (e) => {
+    WINDOW.PREV_X = WINDOW.CURR_X
+    WINDOW.PREV_Y = WINDOW.CURR_Y
+    WINDOW.CURR_X = e.pageX
+    WINDOW.CURR_Y = e.pageY
+
+    handleEvents(e)
+  })
+
+  window.addEventListener('mouseup', (e) => {
+    handleEvents(e)
+    resetWindow()
+  })
+  </script>
+</html>

@@ -378,6 +378,10 @@ def UIController [Utils] ->
     handleEvents(e)
     resetWindow()
   })
+
+  window.addEventListener('contextmenu', (e) => {
+    e.preventDefault()
+  })
 <-
 
 doctype html5

@@ -1,0 +1,269 @@
+def Utils ->
+  const assignRGBATo = (arr1, i1, arr2, i2) => {
+    arr1[i1 + 0] = arr2[i2 + 0]
+    arr1[i1 + 1] = arr2[i2 + 1]
+    arr1[i1 + 2] = arr2[i2 + 2]
+    arr1[i1 + 3] = arr2[i2 + 3]
+  }
+
+  const areRGBAsEqual = (c1, a, c2, b) => {
+    return (c1[a + 0] === c2[b + 0] && c1[a + 1] === c2[b + 1] && c1[a + 2] === c2[b + 2] && c1[a + 3] === c2[b + 3])
+  }
+
+  const blend = (c1, c2) => {
+    let inv = 1.0 / 255.0
+
+    let r1f = (c1[0] || 1) * inv
+    let g1f = (c1[1] || 1) * inv
+    let b1f = (c1[2] || 1) * inv
+    let a1f = (c1[3] || 1) * inv
+
+    let r2f = (c2[0] || 1) * inv
+    let g2f = (c2[1] || 1) * inv
+    let b2f = (c2[2] || 1) * inv
+    let a2f = (c2[3] || 1) * inv
+
+    return [
+      parseInt(r1f * r2f * 255),
+      parseInt(g1f * g2f * 255),
+      parseInt(b1f * b2f * 255),
+      parseInt(a1f * a2f * 255)
+    ]
+  }
+
+  const isRGBAEmpty = (arr, i) => {
+    return (arr[i + 0] || arr[i + 1] || arr[i + 2] || arr[i + 3]) === 0
+  }
+
+  const setPoint = (imgData, x, y, w, h, color) => {
+    if (!imgData) throw Error(`setPoint: ${imgData} undefined`)
+    if (!imgData.length) throw Error(`setPoint: ${imgData} not a valid array`)
+
+    if (x >= 0 && x < w && y >= 0 && y < h) { // check bounds
+      const i = (x + w * y) * 4
+      assignRGBATo(imgData, i, color, 0)
+    }
+  }
+
+  const line = (startX, startY, endX, endY, func) => {
+    let dx = Math.abs(endX - startX)
+    let dy = Math.abs(endY - startY)
+
+    let xDir = endX - startX >= 0 ? 1 : -1
+    let yDir = endY - startY >= 0 ? 1 : -1
+    
+    let lineX = startX
+    let lineY = startY
+
+    let step = dx >= dy ? dx : dy
+
+    dx = dx / step
+    dy = dy / step
+    
+    let i = 0
+    while (i < step) {
+      func(Math.floor(lineX), Math.floor(lineY))
+
+      lineX += (dx * xDir)
+      lineY += (dy * yDir)
+      i += 1
+    }
+
+    func(Math.floor(lineX), Math.floor(lineY))
+  }
+
+  const circle = (xCenter, yCenter, currX, currY, func) => {
+    let radius = Math.floor(Math.sqrt(Math.pow((currX - xCenter), 2) + Math.pow((currY - yCenter), 2)))
+
+    if (radius <= 0) return
+
+    let x = 0
+    let y = radius
+    let p = 1 - radius
+
+
+    const circlePlot = () => {
+      func(xCenter + x, yCenter + y)
+      func(xCenter + y, yCenter + x)
+      func(xCenter - x, yCenter + y)
+      func(xCenter - y, yCenter + x)
+      func(xCenter + x, yCenter - y)
+      func(xCenter + y, yCenter - x)
+      func(xCenter - x, yCenter - y)
+      func(xCenter - y, yCenter - x)
+    }
+
+    // Plot first set of points
+    circlePlot(xCenter, yCenter, x, y)
+
+    while (x <= y) {
+      x++
+      if (p < 0) {
+        p += 2 * x + 1 // Mid point is inside therefore y remains same
+      } else { // Mid point is outside the circle so y decreases
+        y--
+        p += 2 * (x - y) + 1
+      }
+
+      circlePlot(xCenter, yCenter, x, y)
+    }
+  }
+
+  const fill = (imgData, w, h, startX, startY, func) => {
+    const around = [
+      {dx: -1, dy: 0}, {dx: 1, dy: 0},
+      {dx: 0, dy: -1}, {dx: 0, dy: 1}
+    ]
+
+    let drawn = [{x: startX, y: startY}]
+    let done = 0
+
+    for (done = 0; done < drawn.length; done++) {
+      for (let pt of around) {
+        let x = drawn[done].x + pt.dx
+        let y = drawn[done].y + pt.dy
+
+        if (
+          x >= 0 && x < w &&
+          y >= 0 && y < h &&
+          areRGBAsEqual(imgData, ((x + w * y) * 4), imgData, ((startX + w * startY) * 4)) &&
+          !drawn.some(p => p.x === x && p.y === y)
+        ) {
+          drawn.push({ x, y })
+        }
+      }
+    }
+
+    for (let draw of drawn) {
+      func(draw.x, draw.y)
+    }
+  }
+
+  const squareFilled = (startX, startY, endX, endY, func) => {
+    let dx = Math.abs(endX - startX)
+    let dy = Math.abs(endY - startY)
+
+    let xDir = endX - startX >= 0 ? 1 : -1
+    let yDir = endY - startY >= 0 ? 1 : -1
+
+    let lineX = startX
+    let lineY = startY
+
+    let xStep = 0
+    let yStep = 0
+
+    while (xStep <= dx) {
+      yStep = 0
+      lineY = startY
+
+      while (yStep <= dy) {
+        func(lineX, lineY)
+
+        lineY += (1 * yDir)
+        yStep += 1
+      }
+
+      lineX += (1 * xDir)
+      xStep += 1
+    }
+  }
+
+  const square = (startX, startY, endX, endY, func) => {
+    let dx = Math.abs(endX - startX)
+    let dy = Math.abs(endY - startY)
+
+    let xDir = endX - startX >= 0 ? 1 : -1
+    let yDir = endY - startY >= 0 ? 1 : -1
+
+    let lineX = startX
+    let lineY = startY
+    let i = 0
+
+    func(lineX, lineY)
+
+    while (i < dx) {
+      lineX += (1 * xDir)
+      func(lineX, startY)
+      func(lineX, (startY + (dy * yDir)))
+      i += 1
+    }
+
+    i = 0
+
+    while (i < dy) {
+      lineY += (1 * yDir)
+      func(startX, lineY)
+      func((startX + (dx * xDir)), lineY)
+      i += 1
+    }
+  }
+
+  const base64ToImage = async (base64Frame) => {
+    if (!base64Frame) throw Error(`base64ToImage: ${base64Frame}`)
+
+    const loadBase64 = (base64) => {
+      return new Promise((resolve, reject) => {
+        const img = new window.Image()
+        img.onload = () => { return resolve(img) }
+        img.onerror = (err) => { return resolve(err) }
+        img.src = base64
+      })
+    }
+
+    const img = await loadBase64(base64Frame)
+
+    return img
+  }
+
+  const imageDataToBase64 = (imgData) => {
+    if (!imgData) throw Error(`imageDataToImage: ${imgData}`)
+
+    const OFFSCREEN = document.querySelector('#offscreen-canvas')
+    OFFSCREEN_CTX = OFFSCREEN.getContext('2d')
+
+    OFFSCREEN.width = imgData.width
+    OFFSCREEN.height = imgData.height
+    OFFSCREEN_CTX.clearRect(0, 0, OFFSCREEN.width, OFFSCREEN.height)
+    OFFSCREEN_CTX.putImageData(imgData, 0, 0)
+    const base64 = OFFSCREEN.toDataURL()
+
+    return base64
+  }
+
+  const HSLtoRGB = (hue, saturation, lightness) => {
+    const h = hue
+    const s = saturation / 100
+    const l = lightness / 100
+
+    let c = (1 - Math.abs(2 * l - 1)) * s
+    let x = c * (1 - Math.abs((hue / 60) % 2 - 1))
+    let m = l - c / 2
+    let r = 0
+    let g = 0
+    let b = 0
+
+    if (h >= 0 && h < 60) {
+      r = c; g = x; b = 0
+    } else if (h >= 60 && h < 120) {
+      r = x; g = c; b = 0
+    } else if (h >= 120 && h < 180) {
+      r = 0; g = c; b = x
+    } else if (h >= 180 && h < 240) {
+      r = 0; g = x; b = c
+    } else if (h >= 240 && h < 300) {
+      r = x; g = 0; b = c
+    } else if (h >= 300 && h < 360) {
+      r = c; g = 0; b = x
+    }
+
+    r = Math.round((r + m) * 255)
+    g = Math.round((g + m) * 255)
+    b = Math.round((b + m) * 255)
+
+    return { r, g, b }
+  }
+
+  return { assignRGBATo, areRGBAsEqual, blend, isRGBAEmpty, setPoint, line, circle, fill, squareFilled, square, base64ToImage, imageDataToBase64, HSLtoRGB }
+<-
+
+export Utils

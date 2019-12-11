@@ -1,0 +1,543 @@
+import 'utils.adom'
+
+const styles = file 'styles.css'
+
+var iconDownload = file base64 'img/download.svg'
+var iconUndo = file base64 'img/undo.svg'
+var iconRedo = file base64 'img/redo.svg'
+var iconFolderPlus = file base64 'img/folder-plus.svg'
+var tools = [
+  file base64 'img/pencil.svg',
+  file base64 'img/eraser.svg',
+  file base64 'img/line.svg',
+  file base64 'img/circle.svg',
+  file base64 'img/square.svg'
+  //file base64 'img/fill.svg'
+  
+]
+var tool = 0
+var color = [191, 61, 64, 255]
+var modalOpen = false
+var history = []
+var latest = []
+var width = 64
+var height = 64
+// color picker
+var hue = 0
+var saturation = 50
+var lightness = 50
+
+var colorPickerOpen = false
+var newCanvasModalOpen = false
+var exportModalOpen = false
+var downloadModalOpen = false
+
+var url = ''
+
+def UIController [Utils] ->
+  const PENCIL = 0
+  const ERASER = 1
+  const LINE = 2
+  const CIRCLE = 3
+  const SQUARE = 4
+  const FILL = 5
+
+  const CANVAS = document.querySelector('.main-canvas')
+  const PREVIEW = document.querySelector('.preview-canvas')
+
+  let CANVAS_CTX = CANVAS.getContext('2d')
+  let PREVIEW_CTX = PREVIEW.getContext('2d')
+  let EMPTY = new ImageData(width, height)
+
+  const setActiveTool = (e) => {
+    tool = parseInt(e.target.dataset.index)
+    $sync()
+  }
+
+  const undo = async () => {
+    if (!history[history.length - 2]) return 
+
+    const latestImage = await Utils.base64ToImage(history[history.length - 2])
+    CANVAS_CTX.clearRect(0, 0, width, height)
+    CANVAS_CTX.drawImage(latestImage, 0, 0)
+
+    history.pop()
+    window.localStorage.setItem('pixel_history', JSON.stringify(history)) // clean up
+  }
+
+  const historyPushFrame = (canvasImgData) => {
+    const base64 = Utils.imageDataToBase64(canvasImgData)
+    
+    history.push(base64)
+    latest = base64.split('data:image/png;base64,')[1]
+
+    if (history.length > 25) history.splice(0, 1)
+
+    window.localStorage.setItem('pixel_history', JSON.stringify(history)) // clean up
+
+    $sync()
+  }
+
+  const openNewCanvasModal = () => {
+    newCanvasModalOpen = true
+    $sync()
+  }
+
+  const closeNewCanvasModal = () => {
+    newCanvasModalOpen = false
+    $sync()
+  }
+
+  const openExportModal = () => {
+    exportModalOpen = true
+    $sync()
+  }
+
+  const closeExportModal = () => {
+    exportModalOpen = false
+    $sync()
+  }
+
+  const openDownloadModal = () => {
+    downloadModalOpen = true
+    $sync()
+  }
+
+  const closeDownloadModal = () => {
+    downloadModalOpen = false
+    $sync()
+  }
+
+  const newCanvas = (e) => {
+    const value = !e ? '100x100' : e.target.parentNode.parentNode.querySelector('#config-canvas-dimensions').value
+    const split = value.split('x')
+    const w = parseInt(split[0])
+    const h = parseInt(split[1])
+
+    width = w
+    height = h
+    CANVAS.width = w
+    CANVAS.height = h
+    PREVIEW.width = w
+    PREVIEW.height = h
+
+    CANVAS_CTX = CANVAS.getContext('2d')
+    PREVIEW_CTX = PREVIEW.getContext('2d')
+    EMPTY = new ImageData(w, h)
+
+    history = []
+    historyPushFrame(CANVAS_CTX.getImageData(0, 0, width, height))
+
+    window.localStorage.setItem('pixel_width', JSON.stringify(width)) // clean up
+    window.localStorage.setItem('pixel_height', JSON.stringify(height)) // clean up
+
+    if (newCanvasModalOpen) {
+      closeNewCanvasModal()
+    }
+  }
+
+  const toggleColorPicker = () => {
+    const prev = colorPickerOpen
+    colorPickerOpen = !prev
+    $sync()
+  }
+
+  const setHue = (e) => {
+    hue = parseInt(e.target.value)
+    
+    const rgb = Utils.HSLtoRGB(hue, saturation, lightness)
+
+    color[0] = rgb.r
+    color[1] = rgb.g
+    color[2] = rgb.b
+
+    $sync()
+  }
+
+  const setSaturation = (e) => {
+    saturation = parseInt(e.target.value)
+
+    const rgb = Utils.HSLtoRGB(hue, saturation, lightness)
+
+    color[0] = rgb.r
+    color[1] = rgb.g
+    color[2] = rgb.b
+
+    $sync()
+  }
+
+  const setLightness = (e) => {
+    lightness = parseInt(e.target.value)
+
+    const rgb = Utils.HSLtoRGB(hue, saturation, lightness)
+
+    color[0] = rgb.r
+    color[1] = rgb.g
+    color[2] = rgb.b
+
+    $sync()
+  }
+
+  const downloadCanvas = (e) => {
+    const scaleFactor = parseInt(document.querySelector('#config-download-size').value)
+    const c = document.createElement('canvas')
+    const ctx = c.getContext('2d')
+
+    c.width = width * scaleFactor
+    c.height = height * scaleFactor
+    ctx.webkitImageSmoothingEnabled = false
+    ctx.mozImageSmoothingEnabled = false
+    ctx.imageSmoothingEnabled = false
+    ctx.drawImage(CANVAS, 0, 0, c.width, c.height)
+
+    const image = c.toDataURL('image/png').replace('image/png', 'image/octet-stream')
+    e.target.setAttribute('href', image)
+  }
+
+  const main = async () => {
+    // need to check for bad paths
+
+    if (window.location.pathname.length > 1) {
+      const base64 = `data:image/png;base64,${window.location.pathname.substr(1, window.location.pathname.length)}`
+      const img = await Utils.base64ToImage(base64)
+      width = img.width
+      height = img.height
+
+      CANVAS.width = width
+      CANVAS.height = height
+      PREVIEW.width = width
+      PREVIEW.height = height
+
+      CANVAS_CTX = CANVAS.getContext('2d')
+      PREVIEW_CTX = PREVIEW.getContext('2d')
+      EMPTY = new ImageData(width, height)
+
+      CANVAS_CTX.drawImage(img, 0, 0)
+
+      historyPushFrame(CANVAS_CTX.getImageData(0, 0, width, height))
+    } else {
+      const savedHistory = window.localStorage.getItem('pixel_history')
+      const savedWidth = window.localStorage.getItem('pixel_width')
+      const savedHeight = window.localStorage.getItem('pixel_height')
+
+      if (savedWidth) width = parseInt(savedWidth)
+      if (savedHeight) height = parseInt(savedHeight)
+
+      CANVAS.width = width
+      CANVAS.height = height
+    
+      if (savedHistory) {
+        history = JSON.parse(savedHistory)
+
+        CANVAS.width = width
+        CANVAS.height = height
+        PREVIEW.width = width
+        PREVIEW.height = height
+
+        CANVAS_CTX = CANVAS.getContext('2d')
+        PREVIEW_CTX = PREVIEW.getContext('2d')
+        EMPTY = new ImageData(width, height)
+
+        const latestImage = await Utils.base64ToImage(history[history.length - 1])
+
+        CANVAS_CTX.drawImage(latestImage, 0, 0)
+
+        historyPushFrame(CANVAS_CTX.getImageData(0, 0, width, height))
+      } else {
+        newCanvas()
+      }
+    }
+
+    url = window.location.origin
+
+    $sync()
+  }
+
+  main ()
+
+  const WINDOW = {}
+  const resetWindow = () => {
+    WINDOW.REQUEST = ''
+    WINDOW.DATASET = {}
+    WINDOW.MOUSE_DOWN = false
+    WINDOW.START_X = 0
+    WINDOW.START_Y = 0
+    WINDOW.PREV_X = 0
+    WINDOW.PREV_Y = 0
+    WINDOW.CURR_X = 0
+    WINDOW.CURR_Y = 0
+  }
+  resetWindow()
+
+  const handleEvents = (e) => {
+    // CANVAS specific, transforming points to canvas 
+    const scaleX = CANVAS.clientWidth / CANVAS.width
+    const scaleY = CANVAS.clientHeight / CANVAS.height
+    const bb = CANVAS.getBoundingClientRect()
+
+    const startX = Math.floor((WINDOW.START_X - bb.x) / scaleX)
+    const startY = Math.floor((WINDOW.START_Y - bb.y) / scaleY)
+    const prevX = Math.floor((WINDOW.PREV_X - bb.x) / scaleX)
+    const prevY = Math.floor((WINDOW.PREV_Y - bb.y) / scaleY)
+    const currX = Math.floor((WINDOW.CURR_X - bb.x) / scaleX)
+    const currY = Math.floor((WINDOW.CURR_Y - bb.y) / scaleY)
+
+    const canvasImgData = CANVAS_CTX.getImageData(0, 0, width, height)
+    const previewImgData = PREVIEW_CTX.getImageData(0, 0, width, height)
+    previewImgData.data.set(EMPTY.data)
+
+    Utils.setPoint(
+      previewImgData.data,
+      currX,
+      currY,
+      width,
+      height,
+      color
+    )
+    
+    if (WINDOW.REQUEST === 'paintCanvas') {
+      if (tool === PENCIL || tool === ERASER) {
+        Utils.line(prevX, prevY, currX, currY, (x, y) => {
+          Utils.setPoint(
+            canvasImgData.data,
+            x,
+            y,
+            width,
+            height,
+            tool === PENCIL ? color : [0, 0, 0, 0]
+          )
+        })
+      }
+
+      if (tool === LINE || tool === CIRCLE || tool === SQUARE) {
+        const funcMap = {
+          2: Utils.line,
+          3: Utils.circle,
+          4: Utils.square
+        }
+
+        funcMap[tool](startX, startY, currX, currY, (x, y) => {
+          Utils.setPoint(
+            (e.type === 'mousedown' || e.type === 'mousemove') ? previewImgData.data : canvasImgData.data,
+            x,
+            y,
+            width,
+            height,
+            color
+          )
+        })
+      }
+
+      if (tool === FILL) {
+        Utils.fill(canvasImgData.data, width, height, currX, currY, (x, y) => {
+          Utils.setPoint(
+            canvasImgData.data,
+            x,
+            y,
+            width,
+            height,
+            color
+          )
+        })
+      }
+
+      if (e.type === 'mouseup') {
+        previewImgData.data.set(EMPTY.data)
+        historyPushFrame(canvasImgData)
+      }
+    }
+
+    PREVIEW_CTX.putImageData(previewImgData, 0, 0)
+    CANVAS_CTX.putImageData(canvasImgData, 0, 0)
+  }
+
+  window.addEventListener('mousedown', (e) => {
+    WINDOW.REQUEST = e.target.dataset.request
+    WINDOW.DATASET = e.target.dataset
+    WINDOW.MOUSE_DOWN = true
+    WINDOW.START_X = e.pageX
+    WINDOW.START_Y = e.pageY
+    WINDOW.PREV_X = e.pageX
+    WINDOW.PREV_Y = e.pageY
+    WINDOW.CURR_X = e.pageX
+    WINDOW.CURR_Y = e.pageY
+  
+    handleEvents(e)
+  })
+  
+  window.addEventListener('mousemove', (e) => {
+    WINDOW.PREV_X = WINDOW.CURR_X
+    WINDOW.PREV_Y = WINDOW.CURR_Y
+    WINDOW.CURR_X = e.pageX
+    WINDOW.CURR_Y = e.pageY
+  
+    handleEvents(e)
+  })
+  
+  window.addEventListener('mouseup', (e) => {
+    handleEvents(e)
+    resetWindow()
+  })
+<-
+
+doctype html5
+html [
+  head []
+  style '{{styles}}'
+  body class='bg-dark' [
+    div style='overflow: hidden;' [
+      div #UIController class='bg-light bord-dark-b' style='height: 36px;' [
+        div class='flex' style='width: 100%; max-width: 800px; margin: 0 auto;' [
+          div class='fl-1 flex' [
+            button on:click={openNewCanvasModal} class='p-h-10 h-35 bord-dark-l bord-dark-r' [
+              small.bold 'New'
+            ]
+          ]
+          div class='flex bord-dark-l bord-dark-r bord-dark-l' style='position: relative;' [
+            each (t, i in tools) [
+              button on:click={setActiveTool} data-index="{{i}}" class='w-35 h-35' style="background: {{tool == i ? '#3498db' : ''}};" [
+                img src="data:image/svg+xml;base64,{{t}}" ;
+              ]
+            ]
+            button on:click={toggleColorPicker} class='w-35 h-35 p-10 bord-dark-l' style='position: relative;' [
+              div class='w-full h-full b-r-2' style="background: rgb({{color[0]}}, {{color[1]}}, {{color[2]}});" []
+            ]
+            button on:click={undo} class='h-35 bord-dark-l p-h-10' [
+              img src="data:image/svg+xml;base64,{{iconUndo}}" ;
+            ]
+            div id='color-picker' class='bg-light bord-dark-t' style='display:{{colorPickerOpen ? "block" : "none"}}; padding: 10px 15px; position: absolute; top: 100%; right: 0px; width: 100%; z-index: 5;' [
+              div style='margin-bottom: 10px;' [
+                div.flex style='justify-content: space-between; padding-bottom: 2px;' [
+                  small.bold style='display: block; margin-bottom: 2px;' 'Hue'
+                  small.txt-center style='padding-left: 10px; width: 30px;' '{{hue}}'
+                ]
+                div
+                  class='fl-1 p-h-10 b-r-2'
+                  style='background: linear-gradient(to right, #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%);'
+                [
+                  input on:input={setHue} value='{{hue}}' type='range' min='0' max='359' step='1' class='w-full m-0';
+                ]
+              ]
+              
+              div style='margin-bottom: 10px;' [
+                div.flex style='justify-content: space-between; padding-bottom: 2px;' [
+                  small.bold style='display: block; margin-bottom: 2px;' 'Saturation'
+                  small.txt-center style='padding-left: 10px; width: 30px;' '{{saturation}}'
+                ]
+                div
+                  class='p-h-10 b-r-2'
+                  style='background: linear-gradient(to right, hsl({{hue}}, 0%, 50%) 0%,hsl({{hue}}, 100%, 50%) 100%);'
+                [
+                  input on:input={setSaturation} class='w-full m-0' value='{{saturation}}' type='range'  min="0" max="100" step="1";
+                ]
+              ]
+
+              div [
+                div.flex style='justify-content: space-between; padding-bottom: 2px;' [
+                  small.bold style='display: block; margin-bottom: 2px;' 'Lightness'
+                  small.txt-center style='padding-left: 10px; width: 30px;' '{{lightness}}'
+                ]
+                div
+                  class='p-h-10 b-r-2'
+                  style='background: linear-gradient(to right, hsl({{hue}}, 100%, 0%) 0%, hsl({{hue}}, 100%, 50%) 50%, hsl({{hue}}, 100%, 100%) 100%)'
+                [
+                  input on:input={setLightness} class='w-full m-0' value='{{lightness}}' type='range'  min="0" max="100" step="1";
+                ]
+              ] 
+            ]
+          ]
+          div class='fl-1 txt-right' [
+            button on:click={openExportModal} class='p-h-10 h-35  bord-dark-l bord-dark-r' [
+              small.bold 'Share'
+            ]
+            button on:click={openDownloadModal} class='p-h-10 h-35 bord-dark-r' [
+              small.bold 'Download'
+            ]
+          ]
+        ]
+        div class='w-full h-full flex flex-center-x' style='display: {{ newCanvasModalOpen ? "" : "none" }}; position: absolute; top: 0; left: 0; z-index: 5;' [
+          div class='bord-r-2 w-full' style='max-width: 300px; overflow: hidden; margin-top: 175px; ' [
+            div class='flex flex-center bg-mid bord-dark p-v-5' [
+              small.bold "New Canvas"
+            ]
+            div class='p-10 bg-light' [
+              div class='m-5 p-v-5' [
+                div class='flex flex-center' [
+                  small.bold style='width: 150px;' 'Dimensions'
+                  select id='config-canvas-dimensions' class='w-full' [
+                    option value='32x32' "32x32"
+                    option value='50x50' "50x50"
+                    option value='64x64' "64x64"
+                    option value='100x100' "100x100"
+                    option value='128x128' "128x128"
+                    option value='256x256' "256x256"
+                  ]
+                ]
+              ]
+              div class='flex' style='padding-top: 5px;' [
+                button class='b-r-2 bold p-5 w-full bg-red m-5' on:click={closeNewCanvasModal} 'Cancel'
+                button class='b-r-2 bold p-5 w-full bg-green m-5' on:click={newCanvas} 'Confirm'
+              ]
+            ]
+          ]
+        ]
+
+        div class='w-full h-full flex flex-center-x' style='display: {{ exportModalOpen ? "" : "none" }}; position: absolute; top: 0; left: 0; z-index: 5;' [
+          div class='bord-r-2 w-full' style='max-width: 300px; overflow: hidden; margin-top: 175px; ' [
+            div class='flex flex-center bg-mid bord-dark p-v-5' [
+              small.bold "Export & Share"
+            ]
+            div class='p-10 bg-light' [
+              div class='m-5 p-v-5' [
+                div class='flex flex-center' [
+                  small.bold style='width: 130px;' 'Share'
+                  input class='w-full' type='text' value='{{url}}/{{latest}}';
+                ]
+              ]
+              div class='flex' style='padding-top: 5px;' [
+                button class='b-r-2 bold p-5 w-full bg-red m-5' on:click={closeExportModal} 'Close'
+              ]
+            ]
+          ]
+        ]
+
+        div class='w-full h-full flex flex-center-x' style='display: {{ downloadModalOpen ? "" : "none" }}; position: absolute; top: 0; left: 0; z-index: 5;' [
+          div class='bord-r-2 w-full' style='max-width: 250px; overflow: hidden; margin-top: 175px; ' [
+            div class='flex flex-center bg-mid bord-dark p-v-5' [
+              small.bold "Download"
+            ]
+            div class='p-10 bg-light' [
+              div class='m-5 p-v-5' [
+                div class='flex flex-center' [
+                  small.bold style='width: 100px;' 'Size'
+                  select id='config-download-size' class='w-full' [
+                    option value='2' '2x'
+                    option value='4' '4x'
+                    option value='8' '8x'
+                    option value='16' '16x'
+                    option value='32' '32x'
+                  ]
+                ]
+              ]
+              div class='flex' style='padding-top: 5px;' [
+                button class='b-r-2 bold p-5 w-full bg-red m-5' on:click={closeDownloadModal} 'Close'
+                a class='w-full m-5 clickable' style='display: inline-block;' on:click={downloadCanvas} download='pixel-art.png' [
+                  button class='b-r-2 bold p-5 w-full bg-green' style='pointer-events: none;' 'Download'
+                ]
+              ]
+            ]
+          ]
+        ]
+      ]
+      div style='height: calc(100vh - 36px);' [
+        div class='fl-1 bord-dark-r' style='overflow: scroll; overflow: overlay; text-align: center;' data-request='paintCanvas' [
+          div style='display: inline-block; position: relative; width: 500px; height: 500px; background: white; margin: 30px 10px; pointer-events: none;' [
+            canvas class='main-canvas w-full h-full' style='position: absolute; top: 0; left: 0; z-index: 0;' width={width} height={height} []
+            canvas id='preview-canvas' class='preview-canvas w-full h-full' style='position: absolute; top: 0; left: 0; z-index: 1;' width={width} height={height} []
+            canvas id='offscreen-canvas' style='display: none; position: absolute; top: 0; left: 0; z-index: 1;' width={width} height={height} []
+          ]
+        ] 
+      ]
+    ]
+  ]
+]

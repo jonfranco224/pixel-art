@@ -503,6 +503,13 @@ def UIController [Utils] ->
   })
 
   resizeCanvas()
+
+  // Adding google analytics
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-144729452-1');
 <-
 
 var iconDownload = file base64 'img/download.svg'
@@ -527,6 +534,9 @@ html [
   head [
     meta charset="utf-8";
     meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no";
+    title "Pixel Art"
+    meta name='description' content='A minimalist, cross device compatible pixel-art editor.';
+    script async src="https://www.googletagmanager.com/gtag/js?id=UA-144729452-1" []
   ]
   style '{{styles}}'
   body class='bg-dark' style='height: 100%;' [

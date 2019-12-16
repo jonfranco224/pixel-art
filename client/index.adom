@@ -689,7 +689,6 @@ html [
         ]
       ]
       div id='canvas-window' style='height: calc(100% - 36px);' [
-        
         p style='position: absolute; z-index: 10000; top: 0; left: 0; display: none;' id='debug';
         div id='canvas-container' class='fl-1 bord-dark-r h-full' style='overflow: hidden; text-align: center;' data-request='paintCanvas' [
           div style='display: inline-block; position: relative; width: 600px; height: 600px; margin: 30px 0px; pointer-events: none;' [
@@ -698,9 +697,7 @@ html [
             canvas id='preview-canvas' class='preview-canvas w-full h-full' style='width: calc(100% - 20px); position: absolute; top: 0; left: 10px; z-index: 2;' width={width} height={height} []
             canvas id='offscreen-canvas' style='display: none; position: absolute; top: 0; left: 0; z-index: 1;' width={width} height={height} []
           ]
-        ] 
-
-        
+        ]
       ]
     ]
   ]

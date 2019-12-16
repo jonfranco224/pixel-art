@@ -361,7 +361,6 @@ def UIController [Utils] ->
       )
     }
     
-    
     if (WINDOW.REQUEST === 'paintCanvas') {
       if (tool === PENCIL || tool === ERASER) {
         Utils.line(prevX, prevY, currX, currY, (x, y) => {
@@ -400,9 +399,13 @@ def UIController [Utils] ->
       }
 
       if (tool === EYE_DROPPER && e.type === 'mouseup') {
-        color = Utils.getColorAtPixel(canvasImgData, currX, currY)
+        let sampled = Utils.getColorAtPixel(canvasImgData, currX, currY)
 
-        if (color[3] === 0) return // don't do anything if empty pixel
+        if (sampled[3] === 0) return // don't do anything if empty pixel
+
+        color = sampled
+
+        console.log('here')
 
         const hsl = Utils.RGBtoHSL(color[0], color[1], color[2])
 

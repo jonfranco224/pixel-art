@@ -312,7 +312,6 @@ def UIController [Utils] ->
       } else {
         newCanvas()
 
-        console.log('here')
         const base64 = `data:image/png;base64,${welcome_screen}`
         const img = await Utils.base64ToImage(base64)
 

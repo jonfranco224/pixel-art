@@ -405,8 +405,6 @@ def UIController [Utils] ->
 
         color = sampled
 
-        console.log('here')
-
         const hsl = Utils.RGBtoHSL(color[0], color[1], color[2])
 
         hue = hsl.h

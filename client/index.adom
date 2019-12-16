@@ -394,11 +394,11 @@ def UIController [Utils] ->
         })
       }
 
-      if (tool === FILL && e.type === 'mouseup') {
+      if (tool === FILL && (e.type === 'mouseup' || e.type === 'touchend')) {
         Utils.fill(CANVAS_CTX, canvasImgData, width, height, currX, currY, color)
       }
 
-      if (tool === EYE_DROPPER && e.type === 'mouseup') {
+      if (tool === EYE_DROPPER && (e.type === 'mouseup' || e.type === 'touchend')) {
         let sampled = Utils.getColorAtPixel(canvasImgData, currX, currY)
 
         if (sampled[3] === 0) return // don't do anything if empty pixel

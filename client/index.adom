@@ -479,8 +479,6 @@ def UIController [Utils] ->
     handleEvents(e)
     resetWindow()
 
-    console.log(e)
-
     if (e.target.tagName === 'BUTTON') {
       e.preventDefault()
     }

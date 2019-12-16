@@ -120,9 +120,9 @@ select, select:focus {
 .clickable { cursor: pointer; }
 .hover-xlight:hover { background: rgb(110, 110, 110); }
 
-.bg-light { background: rgba(61,61,61); }
-.bg-mid { background: rgba(50, 50, 50); }
-.bg-dark { background: rgb(40, 40, 40); }
+.bg-light { background: rgba(61,61,61, 1); }
+.bg-mid { background: rgba(50, 50, 50, 1); }
+.bg-dark { background: rgba(40, 40, 40, 1); }
 .bg-white { background: rgba(255, 255, 255, .8); }
 
 .bg-green { background: #27ae60; }
@@ -136,8 +136,8 @@ select, select:focus {
 .bord-dark-l { border-left: 1px solid rgb(33, 33, 33); }
 .bord-dark-r { border-right: 1px solid rgb(33, 33, 33); }
 
-.bord-light-b { border-bottom: 1px solid rgba(61,61,61); }
-.bord-light-l { border-left: 1px solid rgba(61,61,61); }
+.bord-light-b { border-bottom: 1px solid rgba(61,61,61, 1); }
+.bord-light-l { border-left: 1px solid rgba(61,61,61, 1); }
 
 .box-dark { box-shadow: 0px 0px 0px 1px inset rgb(33, 33, 33);}
 

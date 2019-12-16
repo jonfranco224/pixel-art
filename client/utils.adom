@@ -7,7 +7,12 @@ def Utils ->
   }
 
   const areRGBAsEqual = (c1, a, c2, b) => {
-    return (c1[a + 0] === c2[b + 0] && c1[a + 1] === c2[b + 1] && c1[a + 2] === c2[b + 2] && c1[a + 3] === c2[b + 3])
+    return (
+      c1[a + 0] === c2[b + 0] &&
+      c1[a + 1] === c2[b + 1] &&
+      c1[a + 2] === c2[b + 2] &&
+      c1[a + 3] === c2[b + 3]
+    )
   }
 
   const blend = (c1, c2) => {
@@ -109,35 +114,99 @@ def Utils ->
     }
   }
 
-  const fill = (imgData, w, h, startX, startY, func) => {
-    const around = [
-      {dx: -1, dy: 0}, {dx: 1, dy: 0},
-      {dx: 0, dy: -1}, {dx: 0, dy: 1}
+  const getColorAtPixel = (imageData, x, y) => {
+    const {width, data} = imageData
+    const linearCord = (y * width + x) * 4
+  
+    return [
+      data[linearCord + 0],
+      data[linearCord + 1],
+      data[linearCord + 2],
+      data[linearCord + 3]
     ]
+  }
 
-    let drawn = [{x: startX, y: startY}]
-    let done = 0
+  const fill = (canvasCTX, canvasImgData, w, h, startX, startY, color) => { // http://www.williammalone.com/articles/html5-canvas-javascript-paint-bucket-tool/
+    let linear_cords = (startY * w + startX) * 4
 
-    for (done = 0; done < drawn.length; done++) {
-      for (let pt of around) {
-        let x = drawn[done].x + pt.dx
-        let y = drawn[done].y + pt.dy
+    const pixel_stack = [{ x: startX, y: startY }]
+    const original_color = getColorAtPixel(canvasImgData, startX, startY)
 
-        if (
-          x >= 0 && x < w &&
-          y >= 0 && y < h &&
-          areRGBAsEqual(imgData, ((x + w * y) * 4), imgData, ((startX + w * startY) * 4)) &&
-          !drawn.some(p => p.x === x && p.y === y)
-        ) {
-          drawn.push({ x, y })
+    if (areRGBAsEqual(color, 0, original_color, 0)) return
+
+    while (pixel_stack.length > 0) {
+      let new_pixel = pixel_stack.shift()
+      let x = new_pixel.x
+      let y = new_pixel.y
+
+      linear_cords = (y * w + x) * 4
+
+      while (
+        y-- >= 0 &&
+        canvasImgData.data[linear_cords + 0] === original_color[0] &&
+        canvasImgData.data[linear_cords + 1] === original_color[1] &&
+        canvasImgData.data[linear_cords + 2] === original_color[2] &&
+        canvasImgData.data[linear_cords + 3] === original_color[3]) {
+          linear_cords -= w * 4
+      }
+
+      linear_cords += w * 4
+      y++
+
+      let reached_left = false
+      let reached_right = false
+
+      while (
+        y++ < h &&
+        canvasImgData.data[linear_cords + 0] === original_color[0] &&
+        canvasImgData.data[linear_cords + 1] === original_color[1] &&
+        canvasImgData.data[linear_cords + 2] === original_color[2] &&
+        canvasImgData.data[linear_cords + 3] === original_color[3]
+      ) {
+        canvasImgData.data[linear_cords + 0] = color[0]
+        canvasImgData.data[linear_cords + 1] = color[1]
+        canvasImgData.data[linear_cords + 2] = color[2]
+        canvasImgData.data[linear_cords + 3] = color[3]
+
+        if (x > 0) {
+          if (
+            canvasImgData.data[linear_cords - 4 + 0] === original_color[0] &&
+            canvasImgData.data[linear_cords - 4 + 1] === original_color[1] &&
+            canvasImgData.data[linear_cords - 4 + 2] === original_color[2] &&
+            canvasImgData.data[linear_cords - 4 + 3] === original_color[3]
+          ) {
+            if (!reached_left) {
+              pixel_stack.push({ x: x - 1, y: y })
+              reached_left = true
+            }
+          } else if (reached_left) {
+            reached_left = false
+          }
         }
+    
+        if (x < w - 1) {
+          if (
+            canvasImgData.data[linear_cords + 4 + 0] === original_color[0] &&
+            canvasImgData.data[linear_cords + 4 + 1] === original_color[1] &&
+            canvasImgData.data[linear_cords + 4 + 2] === original_color[2] &&
+            canvasImgData.data[linear_cords + 4 + 3] === original_color[3]
+          ) {
+            if (!reached_right) {
+              pixel_stack.push({ x: x + 1, y: y })
+              reached_right = true
+            }
+          } else if (reached_right) {
+            reached_right = false
+          }
+        }
+        
+        linear_cords += w * 4
       }
     }
 
-    for (let draw of drawn) {
-      func(draw.x, draw.y)
-    }
+    canvasCTX.putImageData(canvasImgData, 0, 0)
   }
+  
 
   const squareFilled = (startX, startY, endX, endY, func) => {
     let dx = Math.abs(endX - startX)
@@ -263,7 +332,48 @@ def Utils ->
     return { r, g, b }
   }
 
-  return { assignRGBATo, areRGBAsEqual, blend, isRGBAEmpty, setPoint, line, circle, fill, squareFilled, square, base64ToImage, imageDataToBase64, HSLtoRGB }
+  const RGBtoHSL = (red, green, blue) => {
+    // Make r, g, and b fractions of 1
+    let r = red / 255
+    let g = green / 255
+    let b = blue / 255
+  
+    // Find greatest and smallest channel values
+    let cmin = Math.min(r, g, b)
+    let cmax = Math.max(r, g, b)
+    let delta = cmax - cmin
+    let h = 0
+    let s = 0
+    let l = 0
+  
+    if (delta === 0) {
+      h = 0
+    } else if (cmax === r) {
+      h = ((g - b) / delta) % 6
+    } else if (cmax === g) {
+      h = (b - r) / delta + 2
+    } else {
+      h = (r - g) / delta + 4
+    }
+  
+    h = Math.round(h * 60)
+  
+    // Make negative hues positive behind 360°
+    if (h < 0) h += 360
+  
+    l = (cmax + cmin) / 2
+  
+    // Calculate saturation
+    s = delta === 0 ? 0 : delta / (1 - Math.abs(2 * l - 1))
+  
+    // Multiply l and s by 100
+    s = +(s * 100).toFixed(1)
+    l = +(l * 100).toFixed(1)
+  
+    return { h, s, l }
+  }
+
+  return { assignRGBATo, areRGBAsEqual, blend, isRGBAEmpty, setPoint, line, circle, fill, squareFilled, square, base64ToImage, imageDataToBase64, HSLtoRGB, RGBtoHSL, getColorAtPixel }
 <-
 
 export Utils

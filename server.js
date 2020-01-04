@@ -1,14 +1,8 @@
-const ADOM = require('adom-js')
-const A = new ADOM({
-  rootDir: './client' // tell adom where to look for adom files
-})
+const express = require('express')
+const app = express()
+const port = process.env.PORT || 4000
 
-const PORT = process.env.PORT || 4000
+app.use(express.static(__dirname + '/public'))
+app.listen(port)
 
-require('http').createServer((req, res) => {
-  res.writeHead(200, { 'Content-type': 'text/html' })
-  console.log('building')
-  res.end(A.render('index.adom'))
-}).listen(PORT)
-
-console.log(`Running on ${PORT}`)
+console.log(`Running on ${port}`)

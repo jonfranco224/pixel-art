@@ -1,17 +1,26 @@
 {
-  "name": "pixel-adom",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "git": "git add . && git commit -m",
-    "deploy-staging": "git push staging master",
-    "deploy-prod": "git push production master"
-  },
-  "author": "",
-  "license": "ISC",
+  "name": "simple-preact-rollup",
+  "version": "0.2.0",
   "dependencies": {
-    "adom-js": "^0.4.12"
-  }
+    "express": "^4.17.1",
+    "preact": "^8.4.2"
+  },
+  "devDependencies": {
+    "rollup": "^0.68.2",
+    "rollup-plugin-buble": "^0.19.6",
+    "rollup-plugin-es3": "^1.0.3",
+    "rollup-plugin-node-resolve": "^4.0.0",
+    "rollup-plugin-sass": "^0.9.3",
+    "rollup-plugin-svgi": "^0.1.0",
+    "rollup-plugin-uglify": "^6.0.0",
+    "rollup-watch": "^4.3.1"
+  },
+  "scripts": {
+    "build": "rollup -c",
+    "watch": "rollup -c -w"
+  },
+  "author": "Jason Miller <jason@developit.ca> (http://jasonformat.com)",
+  "contributors": [
+    "Kuzivakwashe <kuzivany@gmail.com>"
+  ]
 }

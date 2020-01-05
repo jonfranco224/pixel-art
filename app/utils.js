@@ -115,7 +115,7 @@ export const getColorAtPixel = (imageData, x, y) => {
   ]
 }
 
-export const fill = (canvasCTX, canvasImgData, w, h, startX, startY, color) => { // http://www.williammalone.com/articles/html5-canvas-javascript-paint-bucket-tool/
+export const fill = (canvasImgData, w, h, startX, startY, color) => { // http://www.williammalone.com/articles/html5-canvas-javascript-paint-bucket-tool/
   let linear_cords = (startY * w + startX) * 4
 
   const pixel_stack = [{ x: startX, y: startY }]

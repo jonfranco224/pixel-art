@@ -1,5 +1,5 @@
 {
-  "name": "simple-preact-rollup",
+  "name": "pixel-art-app",
   "version": "0.2.0",
   "dependencies": {
     "express": "^4.17.1",
@@ -19,8 +19,5 @@
     "build": "rollup -c",
     "watch": "rollup -c -w"
   },
-  "author": "Jason Miller <jason@developit.ca> (http://jasonformat.com)",
-  "contributors": [
-    "Kuzivakwashe <kuzivany@gmail.com>"
-  ]
+  "author": ""
 }

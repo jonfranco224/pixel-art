@@ -81,7 +81,7 @@ button {
   margin: 0;
 }
 
-button:hover {
+button:not(.no-hover):hover {
   background: rgb(100, 100, 100);
 }
 
@@ -92,7 +92,7 @@ button:hover {
 }
 
 
-canvas {
+canvas, .frame-img {
   image-rendering: -moz-crisp-edges;
   image-rendering: -webkit-crisp-edges;
   image-rendering: pixelated;
@@ -123,8 +123,9 @@ select, select:focus {
 .bg-light { background: rgba(61,61,61, 1); }
 .bg-mid { background: rgba(50, 50, 50, 1); }
 .bg-dark { background: rgba(40, 40, 40, 1); }
+.bg-transparent { background: transparent; }
 .bg-white { background: rgba(255, 255, 255, .8); }
-
+.bg-blue { background: rgb(52, 152, 219); }
 .bg-green { background: #27ae60; }
 .bg-red { background: #e74c3c; }
 
@@ -154,6 +155,7 @@ select, select:focus {
 .h-full { height: 100%; }
 .h-35 { height: 35px; }
 .w-35 { width: 35px; }
+.w-30 { width: 30px; }
 .h-30 { height: 30px; }
 .h-25 { height: 25px; }
 

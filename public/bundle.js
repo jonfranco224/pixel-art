@@ -703,6 +703,7 @@
 	function createRef() {
 		return {};
 	}
+	//# sourceMappingURL=preact.mjs.map
 
 	var CANVAS = Object.seal({
 	  main: {
@@ -738,6 +739,19 @@
 	  tool: 0,
 
 	  currentFrame: base64,
+
+	  // Layers
+	  layersActive: 0,
+	  layersCount: 1,
+	  layers: [
+	    {
+	      hidden: false,
+	      locked: false,
+	      name: 'Layer 1',
+	      paintActive: false,
+	      image: base64
+	    }
+	  ],
 
 	  // Color Picker
 	  color: [191, 61, 64, 255],
@@ -870,7 +884,7 @@
 	  ]
 	};
 
-	var fill = function (canvasCTX, canvasImgData, w, h, startX, startY, color) { // http://www.williammalone.com/articles/html5-canvas-javascript-paint-bucket-tool/
+	var fill = function (canvasImgData, w, h, startX, startY, color) { // http://www.williammalone.com/articles/html5-canvas-javascript-paint-bucket-tool/
 	  var linear_cords = (startY * w + startX) * 4;
 
 	  var pixel_stack = [{ x: startX, y: startY }];
@@ -1040,321 +1054,6 @@
 	  return { h: h, s: s, l: l }
 	};
 
-	var base64ToImage = async function (base64Frame) {
-	  if (!base64Frame) { throw Error(("base64ToImage: " + base64Frame)) }
-
-	  var loadBase64 = function (base64) {
-	    return new Promise(function (resolve, reject) {
-	      var img = new window.Image();
-	      img.onload = function () { return resolve(img) };
-	      img.onerror = function (err) { return resolve(err) };
-	      img.src = base64;
-	    })
-	  };
-
-	  var img = await loadBase64(base64Frame);
-
-	  return img
-	};
-
-	var ToolBarButton = function (ref) {
-	  var action = ref.action;
-	  var icon = ref.icon;
-	  var active = ref.active;
-	  var children = ref.children;
-
-	  return (
-	    h( 'button', {
-	      onMouseUp: action, class: 'flex flex-center m-0 p-0 relative h-35', style: ("width: 35px; background: " + (active ? '#3498db' : '') + ";") },
-	      children.length > 0 ? children : h( 'img', { src: ("img/" + icon) })
-	    )
-	  )
-	};
-
-	var MenuButton = function (ref) {
-	  var action = ref.action;
-	  var icon = ref.icon;
-	  var label = ref.label;
-
-	  return (
-	    h( 'button', {
-	      onMouseUp: action, onTouchEnd: action, class: 'm-0 p-h-10 h-35 flex flex-center-y' },
-	      h( 'img', { src: ("img/" + icon) }),
-	      h( 'small', { class: 'bold p-h-10' }, label)
-	    )
-	  )
-	};
-
-	var ColorSlider = function (ref) {
-	  var label = ref.label;
-	  var hue = ref.hue;
-	  var value = ref.value;
-	  var action = ref.action;
-	  var onTouchInput = ref.onTouchInput;
-	  var min = ref.min;
-	  var max = ref.max;
-
-	  // label
-	  // val - current val of label
-	  // hue - STATE
-	  // action is to setHSL
-	  
-	  var bgMap = {
-	    'Hue': function () { return 'background: linear-gradient(to right, #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%);' },
-	    'Saturation': function (hue) { return ("background: linear-gradient(to right, hsl(" + hue + ", 0%, 50%) 0%,hsl(" + hue + ", 100%, 50%) 100%);") },
-	    'Lightness': function (hue) { return ("background: linear-gradient(to right, hsl(" + hue + ", 100%, 0%) 0%, hsl(" + hue + ", 100%, 50%) 50%, hsl(" + hue + ", 100%, 100%) 100%);") }
-	  };
-
-	  return (
-	    h( 'div', { style: 'margin-bottom: 10px;' },
-	      h( 'div', { class: 'flex', style: 'justify-content: space-between; padding-bottom: 2px;' },
-	        h( 'small', { class: 'bold', style: 'display: block; margin-bottom: 2px;' }, label),
-	        h( 'small', { class: 'txt-center', style: 'padding-left: 10px; width: 30px;' }, value)
-	      ),
-	      h( 'div', {
-	        class: 'fl-1 b-r-2 flex flex-center-y relative', style: ("cursor: pointer; " + (bgMap[label](hue))) },
-	        h( 'input', { type: 'range', class: 'w-full m-0', min: min, max: max, value: value, onInput: action, onTouchStart: onTouchInput, onTouchMove: onTouchInput })
-	      )
-	    )
-	  )
-	};
-
-	var App = /*@__PURE__*/(function (Component$$1) {
-	  function App () {
-	    Component$$1.call(this);
-	    this.updateAndSave = this.updateAndSave.bind(this);
-	    this.update = this.update.bind(this);
-	    this.save = this.save.bind(this); 
-	  }
-
-	  if ( Component$$1 ) App.__proto__ = Component$$1;
-	  App.prototype = Object.create( Component$$1 && Component$$1.prototype );
-	  App.prototype.constructor = App;
-
-	  App.prototype.componentWillMount = async function componentWillMount () {
-	    STATE.updateAndSave = this.updateAndSave;
-	    STATE.update = this.update;
-	    STATE.save = this.save;
-
-	    if (window.localStorage.length > 0) {
-	      this.load();
-	    }
-	  };
-
-	  App.prototype.componentDidMount = async function componentDidMount () { // main
-	    CANVAS.main.dom = document.querySelector('#canvas-main');
-	    CANVAS.preview.dom = document.querySelector('#canvas-preview');
-
-	    // if we're loading from URL
-	      // new canvas loaded from URL
-	      // this needs its own undo history and such
-	      // clean up if not saved locally
-	    // if not, do below
-	    if (window.localStorage.length === 0) {
-	      this.newCanvas(STATE.width, STATE.height);
-	    } else {
-	      this.setupCanvases(STATE.width, STATE.height);
-	    
-	      var img = await base64ToImage(STATE.currentFrame);
-	      CANVAS.main.ctx.drawImage(img, 0, 0);
-	      CANVAS.main.imageData = CANVAS.main.ctx.getImageData(0, 0, STATE.width, STATE.height);
-	  
-	      this.updateAndSave();
-	    }
-	  };
-
-	  App.prototype.setupCanvases = function setupCanvases (width, height) {
-	    var canvasList = [CANVAS.main, CANVAS.preview];
-
-	    canvasList.forEach(function (canvas) {
-	      canvas.dom.width = width;
-	      canvas.dom.height = height;
-	      canvas.ctx = canvas.dom.getContext('2d');
-	      canvas.imageData = canvas.ctx.getImageData(0, 0, width, height);
-	    });
-
-	    CANVAS.emptyImageData = new window.ImageData(width, height);
-	  };
-
-	  App.prototype.newCanvas = function newCanvas (width, height) {
-	    this.setupCanvases(width, height);
-	  };
-
-	  App.prototype.save = function save () {
-	    Object.keys(STATE).forEach(function (key) {
-	      if (key === 'update') { return }
-	      if (key === 'save') { return }
-	      if (key === 'updateAndSave') { return }
-
-	      if (STATE[key] === null || STATE[key] === undefined) {
-	        console.error(("STATE: Setting undefined to " + key));
-	      }
-
-	      window.localStorage.setItem(key, JSON.stringify(STATE[key]));
-	    });
-	  };
-
-	  App.prototype.load = function load () {
-	    Object.keys(window.localStorage).forEach(function (key) {
-	      STATE[key] = JSON.parse(window.localStorage.getItem(key));
-	    });
-	  };
-
-	  App.prototype.update = function update () {
-	    this.setState();
-	  };
-
-	  App.prototype.updateAndSave = function updateAndSave () {
-	    this.save();
-	    this.setState();
-	  };
-
-	  App.prototype.setTool = function setTool (tool) {
-	    STATE.tool = tool;
-
-	    this.updateAndSave();
-	  };
-
-	  App.prototype.setHSL = function setHSL (ref) {
-	    var hue = ref.hue;
-	    var saturation = ref.saturation;
-	    var lightness = ref.lightness;
-
-	    var RGB = HSLtoRGB(hue, saturation, lightness);
-
-	    STATE.hue = hue;
-	    STATE.saturation = saturation;
-	    STATE.lightness = lightness;
-
-	    STATE.color[0] = RGB.r;
-	    STATE.color[1] = RGB.g;
-	    STATE.color[2] = RGB.b;
-
-	    this.updateAndSave();
-	  };
-
-	  App.prototype.toggleView = function toggleView (view) {
-	    STATE[view] = !STATE[view];
-
-	    this.updateAndSave();
-	  };
-
-	  App.prototype.render = function render$$1 () {
-	    var this$1 = this;
-
-	    console.log('View Rendered');
-	    return (
-	      h( 'div', { class: 'h-full' },
-	        h( 'div', { class: 'bg-light bord-dark-b', style: 'min-height: 36px; max-height: 36px;' },
-	          h( 'div', { class: 'flex w-full', style: 'max-width: 580px; margin: 0 auto;' },
-	            h( 'div', { class: 'fl-1 flex' },
-	              h( 'div', { class: 'flex bord-dark-l', style: 'position: relative;' },
-	                h( ToolBarButton, { action: function () { this$1.toggleView('fileOpen'); }, icon: 'bars.svg' }),
-	                h( 'div', { class: 'bg-light fl-column bord-dark', style: ("visibility: " + (STATE.fileOpen ? 'visible' : 'hidden') + "; position: absolute; top: 100%; left: 0px; z-index: 5;") },
-	                  [
-	                    {
-	                      icon: 'folder-plus.svg',
-	                      label: 'New',
-	                      action: function () {
-	                        // launch modal
-	                        this$1.toggleView('fileOpen');
-	                      }
-	                    }, {
-	                      icon: 'download.svg',
-	                      label: 'Download',
-	                      action: function () {
-	                        // launch modal
-	                        this$1.toggleView('fileOpen');
-	                      }
-	                    }, {
-	                      icon: 'link.svg',
-	                      label: 'Share',
-	                      action: function () {
-	                        // laundch modal
-	                        this$1.toggleView('fileOpen');
-	                      }
-	                    }
-	                  ].map(function (item, i) {
-	                    return h( MenuButton, { action: item.action, icon: item.icon, label: item.label })
-	                  })
-	                )
-	              ),
-	              h( 'div', { class: 'bord-dark-l bord-dark-r flex' },
-	                h( ToolBarButton, { action: function () { this$1.undo(); }, icon: 'undo.svg' })
-	              )
-	            ),
-	            h( 'div', { class: 'flex bord-dark-r bord-dark-l', style: 'position: relative;' },
-	              [
-	                'pencil.svg',
-	                'eraser.svg',
-	                'line.svg',
-	                'circle.svg',
-	                'square.svg',
-	                'fill.svg',
-	                'eye-dropper.svg'
-	              ].map(function (icon, i) {
-	                return h( ToolBarButton, { action: function () { this$1.setTool(i); }, icon: icon, active: i === STATE.tool })
-	              }),
-	              h( 'div', { class: 'bord-dark-l' },
-	                h( ToolBarButton, { action: function () { this$1.toggleView('colorPickerOpen'); } },
-	                  h( 'div', { class: 'b-r-2', style: ("min-width: 15px; min-height: 15px; background: rgb(" + (STATE.color[0]) + ", " + (STATE.color[1]) + ", " + (STATE.color[2]) + ");") })
-	                )
-	              ),
-	              h( 'div', { class: 'bg-light bord-dark-t', style: ("visibility:" + (STATE.colorPickerOpen ? 'visible' : 'hidden') + "; padding: 10px 15px; position: absolute; top: 100%; right: 0px; width: 100%; z-index: 5;") },
-	                h( ColorSlider, {
-	                  label: 'Hue', hue: STATE.hue, value: STATE.hue, min: '0', max: '359', onTouchInput: function (e) {
-	                    e.preventDefault(); // prevent scroll down
-	                    // More responsive action on mobile than default
-	                    var bb = e.target.getBoundingClientRect();
-	                    var offset = e.touches ? e.touches[0].pageX - bb.left : e.offsetX;
-	                    var val = Math.floor(offset * (360 / e.target.clientWidth)) | 0;
-
-	                    if (val < 0 || val >= 360) { return }
-
-	                    this$1.setHSL({ hue: val, saturation: STATE.saturation, lightness: STATE.lightness });
-	                  }, action: function (e) {
-	                    this$1.setHSL({ hue: parseInt(e.target.value), saturation: STATE.saturation, lightness: STATE.lightness });
-	                  } }),
-	                h( ColorSlider, {
-	                  label: 'Saturation', hue: STATE.hue, value: STATE.saturation, min: '0', max: '100', onTouchInput: function (e) {
-	                    e.preventDefault(); // prevent scroll down
-	                    // More responsive action on mobile than default
-	                    var bb = e.target.getBoundingClientRect();
-	                    var offset = e.touches ? e.touches[0].pageX - bb.left : e.offsetX;
-	                    var val = Math.floor(offset * (100 / e.target.clientWidth)) | 0;
-
-	                    if (val < 0 || val >= 100) { return }
-
-	                    this$1.setHSL({ hue: STATE.hue, saturation: val, lightness: STATE.lightness });
-	                  }, action: function (e) {
-	                    this$1.setHSL({ hue: STATE.hue, saturation: parseInt(e.target.value), lightness: STATE.lightness });
-	                  } }),
-	                h( ColorSlider, {
-	                  label: 'Lightness', hue: STATE.hue, value: STATE.lightness, min: '0', max: '100', onTouchInput: function (e) {
-	                    e.preventDefault(); // prevent scroll down
-	                    // More responsive action on mobile than default
-	                    var bb = e.target.getBoundingClientRect();
-	                    var offset = e.touches ? e.touches[0].pageX - bb.left : e.offsetX;
-	                    var val = Math.floor(offset * (100 / e.target.clientWidth)) | 0;
-
-	                    if (val < 0 || val >= 100) { return }
-
-	                    this$1.setHSL({ hue: STATE.hue, saturation: STATE.saturation, lightness: val });
-	                  }, action: function (e) {
-	                    this$1.setHSL({ hue: STATE.hue, saturation: STATE.saturation, lightness: parseInt(e.target.value) });
-	                  } })
-	              )
-	            )
-	          )
-	        ),
-	        h( Canvas, null )
-	      )
-	    )
-	  };
-
-	  return App;
-	}(Component));
-
 	var Canvas = /*@__PURE__*/(function (Component$$1) {
 	  function Canvas () {
 	    Component$$1.call(this);
@@ -1366,14 +1065,42 @@
 	    // Orientation
 	    this.gestureStartScale = 0;
 	    this.canvasContainer = createRef();
+
+	    this.canvasMain = createRef();
+	    this.canvasPreview = createRef();
 	  }
 
 	  if ( Component$$1 ) Canvas.__proto__ = Component$$1;
 	  Canvas.prototype = Object.create( Component$$1 && Component$$1.prototype );
 	  Canvas.prototype.constructor = Canvas;
 
-	  Canvas.prototype.componentDidMount = function componentDidMount () {
+	  Canvas.prototype.setCanvas = function setCanvas () {
+	    CANVAS.main.dom = document.querySelector("#canvas-main");
+	    CANVAS.main.ctx = CANVAS.main.dom.getContext('2d');
+	    CANVAS.main.imageData = CANVAS.main.ctx.getImageData(0, 0, STATE.width, STATE.height);
+
+	    CANVAS.preview.dom = document.querySelector("#canvas-preview");
+	    CANVAS.preview.ctx = CANVAS.preview.dom.getContext('2d');
+	    CANVAS.preview.imageData = CANVAS.preview.ctx.getImageData(0, 0, STATE.width, STATE.height);
+
+	    CANVAS.emptyImageData = new window.ImageData(STATE.width, STATE.height);
+	  };
+
+	  Canvas.prototype.componentDidUpdate = function componentDidUpdate () {
+	    this.setCanvas();
+	  };
+
+	  Canvas.prototype.componentDidMount = async function componentDidMount () {
 	    var this$1 = this;
+
+	    this.setCanvas();
+
+	    // if we're loading from URL
+	    // new canvas loaded from URL
+	    // this needs its own undo history and such
+	    // clean up if not saved locally
+	    // if not, do below
+	    if (window.localStorage.length === 0) ;
 
 	    var container = this.canvasContainer.current;
 	    container.scrollTop = (container.scrollHeight - container.offsetHeight) / 2;
@@ -1448,21 +1175,21 @@
 
 	    // const mouseX = Math.floor(e.pageX - offsetX)
 	    // const mouseY = Math.floor(e.pageY - offsetY)
-	    var bb = this.canvasContainer.current.children[0].children[0].getBoundingClientRect();
-	    
-	    var maxWidth = this.canvasContainer.current.children[0].clientWidth;
-	    var currWidth = bb.width;
+	    // const bb = this.canvasContainer.current.children[0].children[0].getBoundingClientRect()
 
-	    var scaleCurr = STATE.scale;
-	    var scaleNext = zoom || STATE.scale;
+	    // const maxWidth = this.canvasContainer.current.children[0].clientWidth
+	    // const currWidth = bb.width
 
-	    if (scaleNext > scaleCurr && currWidth >= maxWidth - 50) { return }
+	    // const scaleCurr = STATE.scale
+	    // const scaleNext = zoom || STATE.scale
 
-	    // STATE.translateX -= (-((mouseX / scaleNext) - (mouseX / scaleCurr)))
-	    // STATE.translateY -= (-((mouseY / scaleNext) - (mouseY / scaleCurr)))
-	    STATE.scale = scaleNext;
+	    // if (scaleNext > scaleCurr && currWidth >= maxWidth - 50) return
 
-	    STATE.updateAndSave();
+	    // // STATE.translateX -= (-((mouseX / scaleNext) - (mouseX / scaleCurr)))
+	    // // STATE.translateY -= (-((mouseY / scaleNext) - (mouseY / scaleCurr)))
+	    // STATE.scale = scaleNext
+
+	    // STATE.updateAndSave()
 	  };
 
 	  Canvas.prototype.zoom = function zoom (e) {
@@ -1535,7 +1262,16 @@
 
 	    CANVAS.preview.ctx.putImageData(CANVAS.preview.imageData, 0, 0);
 
-	    if (WINDOW.REQUEST !== 'paintCanvas') { return }
+	    if (WINDOW.REQUEST !== 'paintCanvas' || STATE.layers[STATE.layersActive].hidden) { return }
+
+	    if (type === 'down') {
+	      var img = CANVAS.main.dom.parentNode.children[0];
+	      CANVAS.main.ctx.drawImage(img, 0, 0);
+	      CANVAS.main.imageData = CANVAS.main.ctx.getImageData(0, 0, STATE.width, STATE.height);
+
+	      STATE.layers[STATE.layersActive].paintActive = true;
+	      STATE.update();
+	    }
 
 	    // Tools
 	    if (STATE.tool === PENCIL || STATE.tool === ERASER) {
@@ -1573,7 +1309,7 @@
 	    }
 
 	    if (STATE.tool === FILL && type === 'up') {
-	      fill(CANVAS.main.ctx, CANVAS.main.imageData, STATE.width, STATE.height, currX, currY, STATE.color);
+	      fill(CANVAS.main.imageData, STATE.width, STATE.height, currX, currY, STATE.color);
 	    }
 
 	    if (STATE.tool === EYE_DROPPER && type === 'up') {
@@ -1594,8 +1330,13 @@
 	    CANVAS.main.ctx.putImageData(CANVAS.main.imageData, 0, 0);
 
 	    if (type === 'up') {
-	      CANVAS.preview.imageData.data.set(CANVAS.emptyImageData.data);
 	      STATE.currentFrame = CANVAS.main.dom.toDataURL();
+	      STATE.layers[STATE.layersActive].image = CANVAS.main.dom.toDataURL();
+	      STATE.layers[STATE.layersActive].paintActive = false;
+
+	      CANVAS.preview.ctx.putImageData(CANVAS.emptyImageData, 0, 0);
+	      CANVAS.main.ctx.putImageData(CANVAS.emptyImageData, 0, 0);
+
 	      STATE.updateAndSave();
 	    }
 	  };
@@ -1606,11 +1347,21 @@
 	    // overflow: scroll; overflow: overlay;
 	    return (
 	      h( 'div', {
-	        onGestureStart: function (e) { this$1.zoom(e); }, onGestureChange: function (e) { this$1.zoom(e); }, onGestureEnd: function (e) { this$1.zoom(e); }, onWheel: function (e) { this$1.zoom(e); }, ref: this.canvasContainer, 'data-request': 'paintCanvas', class: 'txt-center', style: 'crosshair; height: calc(100% - 36px); overflow: overlay; overflow: scroll;' },
+	        onGestureStart: function (e) { this$1.zoom(e); }, onGestureChange: function (e) { this$1.zoom(e); }, onGestureEnd: function (e) { this$1.zoom(e); }, onWheel: function (e) { this$1.zoom(e); }, ref: this.canvasContainer, 'data-request': 'paintCanvas', class: 'txt-center w-full', style: 'crosshair; overflow: overlay; overflow: scroll;' },
 	        h( 'div', { class: 'w-full h-full flex flex-center', 'data-request': 'paintCanvas', style: 'min-width: 1200px; min-height: 1200px;' },
-	          h( 'div', { style: ("position: relative; pointer-events: none; width: " + (STATE.width * (800 / STATE.width)) + "px; height: 800px; transform: scale(" + (STATE.scale) + ") translateX(" + (STATE.translateX) + "px) translateY(" + (STATE.translateY) + "px); transform-origin: 50% 50%;") },
-	            h( 'canvas', { id: 'canvas-main', class: 'absolute', style: ("width: calc(100% - " + (this.padding * 2) + "px); height: calc(100% - " + (this.padding * 2) + "px); top: " + (this.padding) + "px; left: " + (this.padding) + "px; z-index: 1; background: white;") }),
-	            h( 'canvas', { id: 'canvas-preview', class: 'absolute', style: ("width: calc(100% - " + (this.padding * 2) + "px); height: calc(100% - " + (this.padding * 2) + "px); top: " + (this.padding) + "px; left: " + (this.padding) + "px; z-index: 2;") })
+	          h( 'div', { style: ("position: relative; pointer-events: none; width: " + (STATE.width * (800 / STATE.width)) + "px; height: 800px; transform: scale(" + (STATE.scale) + ") translateX(" + (STATE.translateX) + "px) translateY(" + (STATE.translateY) + "px); transform-origin: 50% 50%; background: white;") },
+	            STATE.layers.map(function (layer, i) {
+	                return h( 'div', { class: 'absolute', style: ("z-index: " + (STATE.layers.length - 1 - i) + "; width: calc(100% - " + (this$1.padding * 2) + "px); height: calc(100% - " + (this$1.padding * 2) + "px); top: " + (this$1.padding) + "px; left: " + (this$1.padding) + "px;") },
+	                  h( 'div', {
+	                    class: 'relative w-full h-full', style: layer.hidden ? "visibility: hidden; pointer-events: none;" : '' },
+	                    h( 'img', { width: STATE.width, height: STATE.height, class: 'frame-img w-full h-full', src: ("" + (layer.image)), style: ("visibility: " + (layer.paintActive || layer.hidden ? 'hidden' : 'visible') + ";") }),
+	                    i === STATE.layersActive &&
+	                      h( 'canvas', { ref: this$1.canvasMain, id: "canvas-main", width: STATE.width, height: STATE.height, class: 'absolute w-full h-full', style: 'top: 0px; left: 0px; z-index: 1;' }),
+	                    i === STATE.layersActive &&
+	                      h( 'canvas', { ref: this$1.canvasPreview, id: "canvas-preview", width: STATE.width, height: STATE.height, class: 'absolute w-full h-full', style: 'top: 0px; left: 0px; z-index: 2;' })
+	                  )
+	                )
+	              })
 	          )
 	        )
 	      )
@@ -1618,6 +1369,378 @@
 	  };
 
 	  return Canvas;
+	}(Component));
+
+	var Layers = /*@__PURE__*/(function (Component$$1) {
+	  function Layers () {
+	    Component$$1.apply(this, arguments);
+	  }
+
+	  if ( Component$$1 ) Layers.__proto__ = Component$$1;
+	  Layers.prototype = Object.create( Component$$1 && Component$$1.prototype );
+	  Layers.prototype.constructor = Layers;
+
+	  Layers.prototype.addLayer = function addLayer () {
+	    STATE.layersCount += 1;
+
+	    STATE.layers.splice(
+	      STATE.layersActive,
+	      0,
+	      {
+	        hidden: false,
+	        locked: false,
+	        name: ("Layer " + (STATE.layersCount)),
+	        paintActive: false,
+	        image: ''
+	      }
+	    );
+
+	    STATE.updateAndSave();
+	  };
+
+	  Layers.prototype.setLayerActive = function setLayerActive (i) {
+	    STATE.layersActive = i;
+	    STATE.updateAndSave();
+	  };
+
+	  Layers.prototype.moveLayerUp = function moveLayerUp () {
+	    if (STATE.layersActive === 0) { return }
+
+	    var temp = STATE.layers[STATE.layersActive - 1];
+	    STATE.layers[STATE.layersActive - 1] = STATE.layers[STATE.layersActive];
+	    STATE.layers[STATE.layersActive] = temp;
+
+	    this.setLayerActive(STATE.layersActive -= 1);
+	  };
+
+	  Layers.prototype.moveLayerDown = function moveLayerDown () {
+	    if (STATE.layersActive + 1 === STATE.layers.length) { return }
+
+	    var temp = STATE.layers[STATE.layersActive + 1];
+	    STATE.layers[STATE.layersActive + 1] = STATE.layers[STATE.layersActive];
+	    STATE.layers[STATE.layersActive] = temp;
+
+	    this.setLayerActive(STATE.layersActive + 1);
+	  };
+
+	  Layers.prototype.deleteLayer = function deleteLayer () {
+	    if (STATE.layers.length !== 1) {
+	      STATE.layers.splice(STATE.layersActive, 1);
+	      
+	      if (STATE.layersActive === STATE.layers.length) { this.setLayerActive(STATE.layersActive - 1); }
+
+	      this.setLayerActive(STATE.layersActive);
+	    }
+	  };
+
+	  Layers.prototype.toggleHidden = function toggleHidden (i) {
+	    STATE.layers[i].hidden = !STATE.layers[i].hidden;
+
+	    STATE.updateAndSave();
+	  };
+
+	  Layers.prototype.render = function render$$1 () {
+	    var this$1 = this;
+
+	    return h( 'div', null,
+	      h( 'div', { class: 'bg-mid bord-dark-b p-h-10 p-v-5 h-30' },
+	        h( 'small', { style: 'position: relative; top: -1px;' }, h( 'b', null, "Layers" ))
+	      ),
+	      h( 'div', { class: 'flex h-30 bord-dark-b w-full' },
+	        h( 'button', { onMouseUp: function () { this$1.addLayer(); }, style: 'min-width: 30px;' },
+	          h( 'img', { src: 'img/plus.svg' })
+	        ),
+	        h( 'button', { onMouseUp: function () { this$1.moveLayerUp(); }, class: 'bord-dark-l', 'data-request': 'moveLayerUp', style: 'min-width: 30px;' },
+	          h( 'img', { src: 'img/up.svg' })
+	        ),
+	        h( 'button', { onMouseUp: function () { this$1.moveLayerDown(); }, class: 'bord-dark-l', 'data-request': 'moveLayerDown', style: 'min-width: 30px;' },
+	          h( 'img', { src: 'img/down.svg' })
+	        ),
+	        h( 'button', { onMouseUp: function () { this$1.deleteLayer(); }, class: 'bord-dark-l bord-dark-r', 'data-request': 'deleteLayer', style: 'min-width: 30px;' },
+	          h( 'img', { src: 'img/trash.svg' })
+	        )
+	      ),
+	      STATE.layers.map(function (layer, i) {
+	          return h( 'div', { class: 'w-full flex h-30 bord-light-b', style: { background: i === STATE.layersActive ? 'rgb(100, 100, 100)' : 'transparent' } },
+	            h( 'button', { onMouseUp: function () { this$1.toggleHidden(i); }, class: ("flex flex-center w-30 no-hover " + (layer.hidden ? 'bg-blue' : 'bg-transparent')) },
+	              h( 'img', { src: ("img/" + (layer.hidden ? 'eye-active.svg' : 'eye.svg')) })
+	            ),
+	            h( 'button', { onMouseUp: function () { this$1.setLayerActive(i); }, class: 'flex flex-center-y fl-1' },
+	              h( 'b', null, layer.name )
+	            )
+	          )
+	        })
+	    )
+	  };
+
+	  return Layers;
+	}(Component));
+
+	var ToolBarButton = function (ref) {
+	  var action = ref.action;
+	  var icon = ref.icon;
+	  var active = ref.active;
+	  var children = ref.children;
+
+	  return (
+	    h( 'button', {
+	      onMouseUp: action, class: 'flex flex-center m-0 p-0 relative', style: ("width: 38px; height: 38px; background: " + (active ? '#3498db' : '') + ";") },
+	      children.length > 0 ? children : h( 'img', { src: ("img/" + icon) })
+	    )
+	  )
+	};
+
+	var MenuButton = function (ref) {
+	  var action = ref.action;
+	  var icon = ref.icon;
+	  var label = ref.label;
+
+	  return (
+	    h( 'button', {
+	      onMouseUp: action, onTouchEnd: action, class: 'm-0 p-h-10 h-35 flex flex-center-y' },
+	      h( 'img', { src: ("img/" + icon) }),
+	      h( 'small', { class: 'bold p-h-10' }, label)
+	    )
+	  )
+	};
+
+	var ColorSlider = function (ref) {
+	  var label = ref.label;
+	  var hue = ref.hue;
+	  var value = ref.value;
+	  var action = ref.action;
+	  var onTouchInput = ref.onTouchInput;
+	  var min = ref.min;
+	  var max = ref.max;
+
+	  // label
+	  // val - current val of label
+	  // hue - STATE
+	  // action is to setHSL
+
+	  var bgMap = {
+	    'Hue': function () { return 'background: linear-gradient(to right, #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%);' },
+	    'Saturation': function (hue) { return ("background: linear-gradient(to right, hsl(" + hue + ", 0%, 50%) 0%,hsl(" + hue + ", 100%, 50%) 100%);") },
+	    'Lightness': function (hue) { return ("background: linear-gradient(to right, hsl(" + hue + ", 100%, 0%) 0%, hsl(" + hue + ", 100%, 50%) 50%, hsl(" + hue + ", 100%, 100%) 100%);") }
+	  };
+
+	  return (
+	    h( 'div', { style: 'padding: 5px 0px;' },
+	      h( 'div', { class: 'flex', style: 'justify-content: space-between; padding-bottom: 2px;' },
+	        h( 'small', { class: 'bold', style: 'display: block; margin-bottom: 2px;' }, label),
+	        h( 'small', { class: 'txt-center', style: 'padding-left: 10px; width: 30px;' }, value)
+	      ),
+	      h( 'div', {
+	        class: 'fl-1 b-r-2 flex flex-center-y relative', style: ("cursor: pointer; " + (bgMap[label](hue))) },
+	        h( 'input', { type: 'range', class: 'w-full m-0', min: min, max: max, value: value, onInput: action, onTouchStart: onTouchInput, onTouchMove: onTouchInput })
+	      )
+	    )
+	  )
+	};
+
+	var App = /*@__PURE__*/(function (Component$$1) {
+	  function App () {
+	    Component$$1.call(this);
+	    this.updateAndSave = this.updateAndSave.bind(this);
+	    this.update = this.update.bind(this);
+	    this.save = this.save.bind(this);
+	  }
+
+	  if ( Component$$1 ) App.__proto__ = Component$$1;
+	  App.prototype = Object.create( Component$$1 && Component$$1.prototype );
+	  App.prototype.constructor = App;
+
+	  App.prototype.componentWillMount = async function componentWillMount () {
+	    STATE.updateAndSave = this.updateAndSave;
+	    STATE.update = this.update;
+	    STATE.save = this.save;
+
+	    if (window.localStorage.length > 0) {
+	      this.load();
+	    }
+	  };
+
+	  App.prototype.save = function save () {
+	    Object.keys(STATE).forEach(function (key) {
+	      if (key === 'update') { return }
+	      if (key === 'save') { return }
+	      if (key === 'updateAndSave') { return }
+
+	      if (STATE[key] === null || STATE[key] === undefined) {
+	        console.error(("STATE: Setting undefined to " + key));
+	      }
+
+	      window.localStorage.setItem(key, JSON.stringify(STATE[key]));
+	    });
+	  };
+
+	  App.prototype.load = function load () {
+	    Object.keys(window.localStorage).forEach(function (key) {
+	      STATE[key] = JSON.parse(window.localStorage.getItem(key));
+	    });
+	  };
+
+	  App.prototype.update = function update () {
+	    this.setState();
+	  };
+
+	  App.prototype.updateAndSave = function updateAndSave () {
+	    this.save();
+	    this.setState();
+	  };
+
+	  App.prototype.setTool = function setTool (tool) {
+	    STATE.tool = tool;
+
+	    this.updateAndSave();
+	  };
+
+	  App.prototype.setHSL = function setHSL (ref) {
+	    var hue = ref.hue;
+	    var saturation = ref.saturation;
+	    var lightness = ref.lightness;
+
+	    var RGB = HSLtoRGB(hue, saturation, lightness);
+
+	    STATE.hue = hue;
+	    STATE.saturation = saturation;
+	    STATE.lightness = lightness;
+
+	    STATE.color[0] = RGB.r;
+	    STATE.color[1] = RGB.g;
+	    STATE.color[2] = RGB.b;
+
+	    this.updateAndSave();
+	  };
+
+	  App.prototype.toggleView = function toggleView (view) {
+	    STATE[view] = !STATE[view];
+
+	    this.updateAndSave();
+	  };
+
+	  App.prototype.render = function render$$1 () {
+	    var this$1 = this;
+
+	    console.log('View Rendered');
+	    return (
+	      h( 'div', { class: 'h-full' },
+	        h( 'div', { class: 'bg-light bord-dark-b flex', style: 'min-height: 39px; max-height: 39px;' },
+	          h( 'div', { class: 'flex w-full' },
+	            h( 'div', { class: 'fl-1 flex' },
+	              h( 'div', { class: 'flex bord-dark-r', style: 'position: relative;' },
+	                h( ToolBarButton, { action: function () { this$1.toggleView('fileOpen'); }, icon: 'bars.svg' }),
+	                h( 'div', { class: 'bg-light fl-column bord-dark', style: ("visibility: " + (STATE.fileOpen ? 'visible' : 'hidden') + "; position: absolute; top: 100%; left: 0px; z-index: 5;") },
+	                  [
+	                    {
+	                      icon: 'folder-plus.svg',
+	                      label: 'New',
+	                      action: function () {
+	                        // launch modal
+	                        this$1.toggleView('fileOpen');
+	                      }
+	                    }, {
+	                      icon: 'download.svg',
+	                      label: 'Download',
+	                      action: function () {
+	                        // launch modal
+	                        this$1.toggleView('fileOpen');
+	                      }
+	                    }, {
+	                      icon: 'link.svg',
+	                      label: 'Share',
+	                      action: function () {
+	                        // laundch modal
+	                        this$1.toggleView('fileOpen');
+	                      }
+	                    }
+	                  ].map(function (item, i) {
+	                    return h( MenuButton, { action: item.action, icon: item.icon, label: item.label })
+	                  })
+	                )
+	              ),
+	              h( 'div', { class: 'bord-dark-r flex' },
+	                h( ToolBarButton, { action: function () { this$1.undo(); }, icon: 'undo.svg' })
+	              )
+	            )
+
+	          )
+	        ),
+	        h( 'div', { class: 'flex', style: 'height: calc(100% - 39px);' },
+	          h( 'div', { class: 'bg-light bord-dark-r', style: 'min-width: 39px; max-width: 39px;' },
+	            h( 'div', { class: 'fl-column', style: 'position: relative;' },
+	              [
+	                'pencil.svg',
+	                'eraser.svg',
+	                'line.svg',
+	                'circle.svg',
+	                'square.svg',
+	                'fill.svg',
+	                'eye-dropper.svg'
+	              ].map(function (icon, i) {
+	                return h( ToolBarButton, { action: function () { this$1.setTool(i); }, icon: icon, active: i === STATE.tool })
+	              }),
+	              h( 'div', { class: 'bord-dark-t bord-dark-b' },
+	                h( ToolBarButton, { action: function () { this$1.toggleView('colorPickerOpen'); } },
+	                  h( 'div', { class: 'b-r-2', style: ("min-width: 15px; min-height: 15px; background: rgb(" + (STATE.color[0]) + ", " + (STATE.color[1]) + ", " + (STATE.color[2]) + ");") })
+	                )
+	              ),
+	              h( 'div', { class: 'bg-light bord-dark', style: ("visibility:" + (STATE.colorPickerOpen ? 'visible' : 'hidden') + "; padding: 10px 15px; position: absolute; left: 100%; bottom: 0px; width: 250px; z-index: 5;") },
+	                h( ColorSlider, {
+	                  label: 'Hue', hue: STATE.hue, value: STATE.hue, min: '0', max: '359', onTouchInput: function (e) {
+	                    e.preventDefault(); // prevent scroll down
+	                    // More responsive action on mobile than default
+	                    var bb = e.target.getBoundingClientRect();
+	                    var offset = e.touches ? e.touches[0].pageX - bb.left : e.offsetX;
+	                    var val = Math.floor(offset * (360 / e.target.clientWidth)) | 0;
+
+	                    if (val < 0 || val >= 360) { return }
+
+	                    this$1.setHSL({ hue: val, saturation: STATE.saturation, lightness: STATE.lightness });
+	                  }, action: function (e) {
+	                    this$1.setHSL({ hue: parseInt(e.target.value), saturation: STATE.saturation, lightness: STATE.lightness });
+	                  } }),
+	                h( ColorSlider, {
+	                  label: 'Saturation', hue: STATE.hue, value: STATE.saturation, min: '0', max: '100', onTouchInput: function (e) {
+	                    e.preventDefault(); // prevent scroll down
+	                    // More responsive action on mobile than default
+	                    var bb = e.target.getBoundingClientRect();
+	                    var offset = e.touches ? e.touches[0].pageX - bb.left : e.offsetX;
+	                    var val = Math.floor(offset * (100 / e.target.clientWidth)) | 0;
+
+	                    if (val < 0 || val >= 100) { return }
+
+	                    this$1.setHSL({ hue: STATE.hue, saturation: val, lightness: STATE.lightness });
+	                  }, action: function (e) {
+	                    this$1.setHSL({ hue: STATE.hue, saturation: parseInt(e.target.value), lightness: STATE.lightness });
+	                  } }),
+	                h( ColorSlider, {
+	                  label: 'Lightness', hue: STATE.hue, value: STATE.lightness, min: '0', max: '100', onTouchInput: function (e) {
+	                    e.preventDefault(); // prevent scroll down
+	                    // More responsive action on mobile than default
+	                    var bb = e.target.getBoundingClientRect();
+	                    var offset = e.touches ? e.touches[0].pageX - bb.left : e.offsetX;
+	                    var val = Math.floor(offset * (100 / e.target.clientWidth)) | 0;
+
+	                    if (val < 0 || val >= 100) { return }
+
+	                    this$1.setHSL({ hue: STATE.hue, saturation: STATE.saturation, lightness: val });
+	                  }, action: function (e) {
+	                    this$1.setHSL({ hue: STATE.hue, saturation: STATE.saturation, lightness: parseInt(e.target.value) });
+	                  } })
+	              )
+	            )
+	          ),
+	          h( Canvas, null ),
+	          h( 'div', { class: 'bg-light bord-dark-l', style: 'width: 300px;' },
+	            h( Layers, null )
+	          )
+	        )
+	      )
+	    )
+	  };
+
+	  return App;
 	}(Component));
 
 	render(h( App, null ), document.body);

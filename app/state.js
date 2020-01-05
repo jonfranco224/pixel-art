@@ -33,6 +33,19 @@ export const STATE = Object.seal({
 
   currentFrame: base64,
 
+  // Layers
+  layersActive: 0,
+  layersCount: 1,
+  layers: [
+    {
+      hidden: false,
+      locked: false,
+      name: 'Layer 1',
+      paintActive: false,
+      image: base64
+    }
+  ],
+
   // Color Picker
   color: [191, 61, 64, 255],
   hue: 0,

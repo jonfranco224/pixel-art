@@ -1,8 +1,9 @@
 import { h, Component } from 'preact'
-import { HSLtoRGB, base64ToImage } from './utils'
-import { STATE, CANVAS } from './state'
+import { HSLtoRGB } from './utils'
+import { STATE } from './state'
 import { Canvas } from './canvas'
 import { Layers } from './layers'
+import { ColorPalette } from './color-palette'
 
 const ToolBarButton = ({ action, icon, active, children }) => {
   return (
@@ -28,11 +29,6 @@ const MenuButton = ({ action, icon, label }) => {
 }
 
 const ColorSlider = ({ label, hue, value, action, onTouchInput, min, max }) => {
-  // label
-  // val - current val of label
-  // hue - STATE
-  // action is to setHSL
-
   const bgMap = {
     'Hue': () => { return 'background: linear-gradient(to right, #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%);' },
     'Saturation': (hue) => { return `background: linear-gradient(to right, hsl(${hue}, 0%, 50%) 0%,hsl(${hue}, 100%, 50%) 100%);` },
@@ -61,6 +57,8 @@ export default class App extends Component {
     this.updateAndSave = this.updateAndSave.bind(this)
     this.update = this.update.bind(this)
     this.save = this.save.bind(this)
+
+    this.history = []
   }
 
   async componentWillMount () {
@@ -71,20 +69,59 @@ export default class App extends Component {
     if (window.localStorage.length > 0) {
       this.load()
     }
+
+    this.save()
   }
 
-  save () {
+  undoAdd (changes) {
+    if (this.history.length > 30) this.history.splice(0, 1)
+
+    this.history.push(changes)
+  }
+
+  undoRevert (key, previousValue) {
+    const lastItem = this.history[this.history.length - 1]
+
+    lastItem.forEach(change => {
+      STATE[change.key] = JSON.parse(change.prev)
+      window.localStorage.setItem(change.key, change.prev)
+    })
+
+    STATE.update()
+
+    if (this.history.length > 1) this.history.splice(this.history.length - 1, 1)
+  }
+
+  validateState () {
     Object.keys(STATE).forEach(key => {
       if (key === 'update') return
       if (key === 'save') return
       if (key === 'updateAndSave') return
 
       if (STATE[key] === null || STATE[key] === undefined) {
-        console.error(`STATE: Setting undefined to ${key}`)
+        console.error(`STATE: Setting ${key} is being set to undefined`)
       }
-
-      window.localStorage.setItem(key, JSON.stringify(STATE[key]))
     })
+  }
+
+  save () {
+    const changes = []
+
+    Object.keys(STATE).forEach(key => {
+      if (key === 'update') return
+      if (key === 'save') return
+      if (key === 'updateAndSave') return
+
+      const prev = window.localStorage.getItem(key)
+      const next = JSON.stringify(STATE[key])
+
+      if (prev !== next) {
+        changes.push({ key, prev: prev === null ? JSON.stringify(STATE[key]) : prev }) // default to ram value if localStorage is empty  
+        window.localStorage.setItem(key, next)
+      }
+    })
+
+    this.undoAdd(changes)
   }
 
   load () {
@@ -94,10 +131,14 @@ export default class App extends Component {
   }
 
   update () {
+    this.validateState()
+
     this.setState()
   }
 
   updateAndSave () {
+    this.validateState()
+
     this.save()
     this.setState()
   }
@@ -105,7 +146,7 @@ export default class App extends Component {
   setTool (tool) {
     STATE.tool = tool
 
-    this.updateAndSave()
+    this.update()
   }
 
   setHSL ({ hue, saturation, lightness }) {
@@ -119,13 +160,13 @@ export default class App extends Component {
     STATE.color[1] = RGB.g
     STATE.color[2] = RGB.b
 
-    this.updateAndSave()
+    this.update()
   }
 
   toggleView (view) {
     STATE[view] = !STATE[view]
 
-    this.updateAndSave()
+    this.update()
   }
 
   render () {
@@ -166,11 +207,12 @@ export default class App extends Component {
                   })}
                 </div>
               </div>
-              <div class='bord-dark-r flex'>
-                <ToolBarButton action={() => { this.undo() }} icon={'undo.svg'} />
+            </div>
+            <div class='flex' style='max-width: 248px; min-width: 248px;'>
+              <div class='bord-dark-l bord-dark-r flex'>
+                <ToolBarButton action={() => { this.undoRevert() }} icon={'undo.svg'} />
               </div>
             </div>
-
           </div>
         </div>
         <div class='flex' style='height: calc(100% - 39px);'>
@@ -260,7 +302,8 @@ export default class App extends Component {
             </div>
           </div>
           <Canvas />
-          <div class='bg-light bord-dark-l' style='width: 300px;'>
+          <div class='bg-light bord-dark-l h-full' style='max-width: 248px; min-width: 248px;'>
+            <ColorPalette />
             <Layers />
           </div>
         </div>

@@ -1,6 +1,6 @@
 import { STATE } from './state'
 
-const areRGBAsEqual = (c1, a, c2, b) => {
+export const areRGBAsEqual = (c1, a, c2, b) => {
   return (
     c1[a + 0] === c2[b + 0] &&
     c1[a + 1] === c2[b + 1] &&
@@ -44,7 +44,6 @@ export const circle = (xCenter, yCenter, currX, currY, func) => {
   let x = 0
   let y = radius
   let p = 1 - radius
-
 
   const circlePlot = () => {
     func(xCenter + x, yCenter + y)
@@ -194,7 +193,7 @@ export const fill = (canvasImgData, w, h, startX, startY, color) => { // http://
   }
 }
 
-const assignRGBATo = (arr1, i1, arr2, i2) => {
+export const assignRGBATo = (arr1, i1, arr2, i2) => {
   arr1[i1 + 0] = arr2[i2 + 0]
   arr1[i1 + 1] = arr2[i2 + 1]
   arr1[i1 + 2] = arr2[i2 + 2]

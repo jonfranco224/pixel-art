@@ -706,6 +706,7 @@
 	//# sourceMappingURL=preact.mjs.map
 
 	var CANVAS = Object.seal({
+	  offscreen: document.createElement('canvas'),
 	  main: {
 	    dom: undefined,
 	    ctx: undefined,
@@ -722,10 +723,9 @@
 	var defaultWidth = 50;
 	var defaultHeight = 50;
 
-	var canvas = document.createElement('canvas');
-	canvas.width = defaultWidth;
-	canvas.height = defaultHeight;
-	var base64 = canvas.toDataURL();
+	CANVAS.offscreen.width = defaultWidth;
+	CANVAS.offscreen.height = defaultHeight;
+	var base64 = CANVAS.offscreen.toDataURL();
 
 	var STATE = Object.seal({
 	  // Canvas
@@ -734,8 +734,6 @@
 	  scale: 0.75,
 	  translateX: 0,
 	  translateY: 0,
-	  offsetX: 0,
-	  offsetY: 0,
 	  tool: 0,
 
 	  currentFrame: base64,
@@ -753,6 +751,30 @@
 	    }
 	  ],
 
+	  // Palette
+	  palette: [
+	    [26, 188, 156, 255],
+	    [46, 204, 113, 255],
+	    [52, 152, 219, 255],
+	    [155, 89, 182, 255],
+	    [52, 73, 94, 255],
+	    [22, 160, 133, 255],
+	    [39, 174, 96, 255],
+	    [41, 128, 185, 255],
+	    [142, 68, 173, 255],
+	    [44, 62, 80, 255],
+	    [241, 196, 15, 255],
+	    [230, 126, 34, 255],
+	    [231, 76, 60, 255],
+	    [236, 240, 241, 255],
+	    [149, 165, 166, 255],
+	    [243, 156, 18, 255],
+	    [211, 84, 0, 255],
+	    [192, 57, 43, 255],
+	    [189, 195, 199, 255],
+	    [127, 140, 141, 255]
+	  ],
+
 	  // Color Picker
 	  color: [191, 61, 64, 255],
 	  hue: 0,
@@ -763,6 +785,7 @@
 	  colorPickerOpen: false,
 	  fileOpen: false,
 
+	  // Update utility functions
 	  update: undefined,
 	  updateAndSave: undefined,
 	  save: undefined
@@ -812,7 +835,6 @@
 	  var x = 0;
 	  var y = radius;
 	  var p = 1 - radius;
-
 
 	  var circlePlot = function () {
 	    func(xCenter + x, yCenter + y);
@@ -1065,26 +1087,11 @@
 	    // Orientation
 	    this.gestureStartScale = 0;
 	    this.canvasContainer = createRef();
-
-	    this.canvasMain = createRef();
-	    this.canvasPreview = createRef();
 	  }
 
 	  if ( Component$$1 ) Canvas.__proto__ = Component$$1;
 	  Canvas.prototype = Object.create( Component$$1 && Component$$1.prototype );
 	  Canvas.prototype.constructor = Canvas;
-
-	  Canvas.prototype.setCanvas = function setCanvas () {
-	    CANVAS.main.dom = document.querySelector("#canvas-main");
-	    CANVAS.main.ctx = CANVAS.main.dom.getContext('2d');
-	    CANVAS.main.imageData = CANVAS.main.ctx.getImageData(0, 0, STATE.width, STATE.height);
-
-	    CANVAS.preview.dom = document.querySelector("#canvas-preview");
-	    CANVAS.preview.ctx = CANVAS.preview.dom.getContext('2d');
-	    CANVAS.preview.imageData = CANVAS.preview.ctx.getImageData(0, 0, STATE.width, STATE.height);
-
-	    CANVAS.emptyImageData = new window.ImageData(STATE.width, STATE.height);
-	  };
 
 	  Canvas.prototype.componentDidUpdate = function componentDidUpdate () {
 	    this.setCanvas();
@@ -1094,13 +1101,6 @@
 	    var this$1 = this;
 
 	    this.setCanvas();
-
-	    // if we're loading from URL
-	    // new canvas loaded from URL
-	    // this needs its own undo history and such
-	    // clean up if not saved locally
-	    // if not, do below
-	    if (window.localStorage.length === 0) ;
 
 	    var container = this.canvasContainer.current;
 	    container.scrollTop = (container.scrollHeight - container.offsetHeight) / 2;
@@ -1167,6 +1167,18 @@
 	    window.addEventListener('resize', resizeCanvas);
 
 	    resizeCanvas();
+	  };
+
+	  Canvas.prototype.setCanvas = function setCanvas () {
+	    CANVAS.main.dom = document.querySelector("#canvas-main");
+	    CANVAS.main.ctx = CANVAS.main.dom.getContext('2d');
+	    CANVAS.main.imageData = CANVAS.main.ctx.getImageData(0, 0, STATE.width, STATE.height);
+
+	    CANVAS.preview.dom = document.querySelector("#canvas-preview");
+	    CANVAS.preview.ctx = CANVAS.preview.dom.getContext('2d');
+	    CANVAS.preview.imageData = CANVAS.preview.ctx.getImageData(0, 0, STATE.width, STATE.height);
+
+	    CANVAS.emptyImageData = new window.ImageData(STATE.width, STATE.height);
 	  };
 
 	  Canvas.prototype.setOrientation = function setOrientation (e, zoom) {
@@ -1315,6 +1327,14 @@
 	    if (STATE.tool === EYE_DROPPER && type === 'up') {
 	      var sampled = getColorAtPixel(CANVAS.main.imageData, currX, currY);
 
+	      if (
+	        sampled[0] === undefined || sampled[0] === null ||
+	        sampled[1] === undefined || sampled[1] === null ||
+	        sampled[2] === undefined || sampled[2] === null
+	      ) {
+	        return
+	      }
+
 	      if (sampled[3] === 0) { return } // don't do anything if empty pixel
 
 	      STATE.color = sampled;
@@ -1344,10 +1364,9 @@
 	  Canvas.prototype.render = function render$$1 () {
 	    var this$1 = this;
 
-	    // overflow: scroll; overflow: overlay;
 	    return (
 	      h( 'div', {
-	        onGestureStart: function (e) { this$1.zoom(e); }, onGestureChange: function (e) { this$1.zoom(e); }, onGestureEnd: function (e) { this$1.zoom(e); }, onWheel: function (e) { this$1.zoom(e); }, ref: this.canvasContainer, 'data-request': 'paintCanvas', class: 'txt-center w-full', style: 'crosshair; overflow: overlay; overflow: scroll;' },
+	        onGestureStart: function (e) { this$1.zoom(e); }, onGestureChange: function (e) { this$1.zoom(e); }, onGestureEnd: function (e) { this$1.zoom(e); }, onWheel: function (e) { this$1.zoom(e); }, ref: this.canvasContainer, 'data-request': 'paintCanvas', class: 'txt-center w-full overflow', style: 'cursor: crosshair;' },
 	        h( 'div', { class: 'w-full h-full flex flex-center', 'data-request': 'paintCanvas', style: 'min-width: 1200px; min-height: 1200px;' },
 	          h( 'div', { style: ("position: relative; pointer-events: none; width: " + (STATE.width * (800 / STATE.width)) + "px; height: 800px; transform: scale(" + (STATE.scale) + ") translateX(" + (STATE.translateX) + "px) translateY(" + (STATE.translateY) + "px); transform-origin: 50% 50%; background: white;") },
 	            STATE.layers.map(function (layer, i) {
@@ -1356,9 +1375,9 @@
 	                    class: 'relative w-full h-full', style: layer.hidden ? "visibility: hidden; pointer-events: none;" : '' },
 	                    h( 'img', { width: STATE.width, height: STATE.height, class: 'frame-img w-full h-full', src: ("" + (layer.image)), style: ("visibility: " + (layer.paintActive || layer.hidden ? 'hidden' : 'visible') + ";") }),
 	                    i === STATE.layersActive &&
-	                      h( 'canvas', { ref: this$1.canvasMain, id: "canvas-main", width: STATE.width, height: STATE.height, class: 'absolute w-full h-full', style: 'top: 0px; left: 0px; z-index: 1;' }),
+	                      h( 'canvas', { id: 'canvas-main', width: STATE.width, height: STATE.height, class: 'absolute w-full h-full', style: 'top: 0px; left: 0px; z-index: 1;' }),
 	                    i === STATE.layersActive &&
-	                      h( 'canvas', { ref: this$1.canvasPreview, id: "canvas-preview", width: STATE.width, height: STATE.height, class: 'absolute w-full h-full', style: 'top: 0px; left: 0px; z-index: 2;' })
+	                      h( 'canvas', { id: 'canvas-preview', width: STATE.width, height: STATE.height, class: 'absolute w-full h-full', style: 'top: 0px; left: 0px; z-index: 2;' })
 	                  )
 	                )
 	              })
@@ -1383,6 +1402,11 @@
 	  Layers.prototype.addLayer = function addLayer () {
 	    STATE.layersCount += 1;
 
+	    CANVAS.offscreen.width = STATE.width;
+	    CANVAS.offscreen.height = STATE.height;
+	    var ctx = CANVAS.offscreen.getContext('2d');
+	    ctx.clearRect(0, 0, STATE.width, STATE.height);
+
 	    STATE.layers.splice(
 	      STATE.layersActive,
 	      0,
@@ -1391,7 +1415,7 @@
 	        locked: false,
 	        name: ("Layer " + (STATE.layersCount)),
 	        paintActive: false,
-	        image: ''
+	        image: CANVAS.offscreen.toDataURL()
 	      }
 	    );
 
@@ -1442,38 +1466,126 @@
 	  Layers.prototype.render = function render$$1 () {
 	    var this$1 = this;
 
-	    return h( 'div', null,
-	      h( 'div', { class: 'bg-mid bord-dark-b p-h-10 p-v-5 h-30' },
+	    return h( 'div', { class: 'fl-column', style: 'max-height: calc(100% - 200px); min-height: calc(100% - 200px);' },
+	      h( 'div', { class: 'bg-mid bord-dark-b bord-dark-t p-h-10 p-v-5 h-30' },
 	        h( 'small', { style: 'position: relative; top: -1px;' }, h( 'b', null, "Layers" ))
 	      ),
-	      h( 'div', { class: 'flex h-30 bord-dark-b w-full' },
-	        h( 'button', { onMouseUp: function () { this$1.addLayer(); }, style: 'min-width: 30px;' },
-	          h( 'img', { src: 'img/plus.svg' })
-	        ),
-	        h( 'button', { onMouseUp: function () { this$1.moveLayerUp(); }, class: 'bord-dark-l', 'data-request': 'moveLayerUp', style: 'min-width: 30px;' },
-	          h( 'img', { src: 'img/up.svg' })
-	        ),
-	        h( 'button', { onMouseUp: function () { this$1.moveLayerDown(); }, class: 'bord-dark-l', 'data-request': 'moveLayerDown', style: 'min-width: 30px;' },
-	          h( 'img', { src: 'img/down.svg' })
-	        ),
-	        h( 'button', { onMouseUp: function () { this$1.deleteLayer(); }, class: 'bord-dark-l bord-dark-r', 'data-request': 'deleteLayer', style: 'min-width: 30px;' },
-	          h( 'img', { src: 'img/trash.svg' })
-	        )
-	      ),
-	      STATE.layers.map(function (layer, i) {
-	          return h( 'div', { class: 'w-full flex h-30 bord-light-b', style: { background: i === STATE.layersActive ? 'rgb(100, 100, 100)' : 'transparent' } },
-	            h( 'button', { onMouseUp: function () { this$1.toggleHidden(i); }, class: ("flex flex-center w-30 no-hover " + (layer.hidden ? 'bg-blue' : 'bg-transparent')) },
-	              h( 'img', { src: ("img/" + (layer.hidden ? 'eye-active.svg' : 'eye.svg')) })
-	            ),
-	            h( 'button', { onMouseUp: function () { this$1.setLayerActive(i); }, class: 'flex flex-center-y fl-1' },
-	              h( 'b', null, layer.name )
-	            )
+	      h( 'div', { class: 'flex h-30 bord-dark-b w-full fl-justify-between' },
+	        h( 'div', { class: 'flex' },
+	          h( 'button', { onMouseUp: function () { this$1.addLayer(); }, class: 'w-30 flex flex-center' },
+	            h( 'img', { src: 'img/plus.svg' })
+	          ),
+	          h( 'button', { onMouseUp: function () { this$1.moveLayerUp(); }, class: 'w-30 flex flex-center bord-dark-l', 'data-request': 'moveLayerUp' },
+	            h( 'img', { src: 'img/up.svg' })
+	          ),
+	          h( 'button', { onMouseUp: function () { this$1.moveLayerDown(); }, class: 'w-30 flex flex-center bord-dark-l bord-dark-r', 'data-request': 'moveLayerDown' },
+	            h( 'img', { src: 'img/down.svg' })
 	          )
-	        })
+	        ),
+	        h( 'div', { class: 'flex' },
+	          h( 'button', { onMouseUp: function () { this$1.deleteLayer(); }, class: 'w-30 flex flex-center bord-dark-l ', 'data-request': 'deleteLayer' },
+	            h( 'img', { src: 'img/trash.svg' })
+	          )
+	        )
+	        
+	      ),
+	      h( 'div', { class: 'fl-1 overflow' },
+	        STATE.layers.map(function (layer, i) {
+	            return h( 'div', { class: 'w-full flex h-30 bord-light-b', style: { background: i === STATE.layersActive ? 'rgb(100, 100, 100)' : 'transparent' } },
+	              h( 'button', { onMouseUp: function () { this$1.toggleHidden(i); }, class: ("flex flex-center w-30 no-hover " + (layer.hidden ? 'bg-blue' : 'bg-transparent')) },
+	                h( 'img', { src: ("img/" + (layer.hidden ? 'eye-active.svg' : 'eye.svg')) })
+	              ),
+	              h( 'button', { onMouseUp: function () { this$1.setLayerActive(i); }, class: 'flex flex-center-y fl-1' },
+	                h( 'b', null, layer.name )
+	              )
+	            )
+	          })
+	      )
+	      
 	    )
 	  };
 
 	  return Layers;
+	}(Component));
+
+	var ColorPalette = /*@__PURE__*/(function (Component$$1) {
+	  function ColorPalette () {
+	    Component$$1.apply(this, arguments);
+	  }
+
+	  if ( Component$$1 ) ColorPalette.__proto__ = Component$$1;
+	  ColorPalette.prototype = Object.create( Component$$1 && Component$$1.prototype );
+	  ColorPalette.prototype.constructor = ColorPalette;
+
+	  ColorPalette.prototype.setColor = function setColor (i) {
+	    if (areRGBAsEqual(STATE.color, 0, STATE.palette[i], 0)) { return }
+
+	    assignRGBATo(STATE.color, 0, STATE.palette[i], 0);
+
+	    var hsl = RGBtoHSL(STATE.color[0], STATE.color[1], STATE.color[2]);
+
+	    STATE.hue = Math.floor(hsl.h);
+	    STATE.saturation = Math.floor(hsl.s);
+	    STATE.lightness = Math.floor(hsl.l);
+
+	    STATE.update();
+	  };
+
+	  ColorPalette.prototype.addColor = function addColor () { 
+	    for (var i = 0; i < STATE.palette.length; i++) {
+	      if (areRGBAsEqual(STATE.palette[i], 0, STATE.color, 0)) { return }
+	    }
+	    var newColor = [0, 0, 0, 0];
+	    assignRGBATo(newColor, 0, STATE.color, 0);
+
+	    STATE.palette.push(newColor);
+
+	    STATE.updateAndSave();
+	  };
+
+	  ColorPalette.prototype.deleteColor = function deleteColor () {
+	    for (var i = 0; i < STATE.palette.length; i++) {
+	      if (areRGBAsEqual(STATE.palette[i], 0, STATE.color, 0)) {
+	        STATE.palette.splice(i, 1);
+	        STATE.updateAndSave();
+	      }
+	    }
+	  };
+
+	  ColorPalette.prototype.render = function render$$1 () {
+	    var this$1 = this;
+
+	    return h( 'div', { class: 'fl-column', style: 'min-height: 200px; max-height: 200px;' },
+	      h( 'div', { class: 'bg-mid bord-dark-b p-h-10 p-v-5 h-30' },
+	        h( 'small', { style: 'position: relative; top: -1px;' }, h( 'b', null, "Color Palette" ))
+	      ),
+	      h( 'div', { class: 'flex h-30 bord-dark-b w-full fl-justify-between' },
+	        h( 'button', { onMouseUp: function () { this$1.addColor(); }, class: 'bord-dark-r', style: 'min-width: 30px;' },
+	          h( 'img', { src: 'img/plus.svg' })
+	        ),
+	        h( 'button', { onMouseUp: function () { this$1.deleteColor(); }, class: 'bord-dark-l', 'data-request': 'deleteLayer', style: 'min-width: 30px;' },
+	          h( 'img', { src: 'img/trash.svg' })
+	        )
+	      ),
+	      h( 'div', { class: 'fl-1 overflow flex fl-wrap', style: 'align-content: flex-start;' },
+	        STATE.palette.map(function (color, i) {
+	            var isActive = areRGBAsEqual(color, 0, STATE.color, 0);
+	            return h( 'button', {
+	              onMouseUp: function () {
+	                  this$1.setColor(i);
+	                }, class: 'm-0 p-0 relative', style: {
+	                minWidth: '30px',
+	                minHeight: '30px',
+	                background: ("rgba(" + (color[0]) + ", " + (color[1]) + ", " + (color[2]) + ", " + (color[3]) + ")"),
+	                border: isActive ? '2px solid rgba(61,61,61, 1)' : '2px solid rgba(61,61,61, 0)',
+	                boxShadow: ("inset 0px 0px 0px 1px rgba(255, 255, 255, " + (isActive ? '255' : '0') + ")")
+	              } })
+	          })
+	      )
+	    )
+	  };
+
+	  return ColorPalette;
 	}(Component));
 
 	var ToolBarButton = function (ref) {
@@ -1513,11 +1625,6 @@
 	  var min = ref.min;
 	  var max = ref.max;
 
-	  // label
-	  // val - current val of label
-	  // hue - STATE
-	  // action is to setHSL
-
 	  var bgMap = {
 	    'Hue': function () { return 'background: linear-gradient(to right, #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%);' },
 	    'Saturation': function (hue) { return ("background: linear-gradient(to right, hsl(" + hue + ", 0%, 50%) 0%,hsl(" + hue + ", 100%, 50%) 100%);") },
@@ -1544,6 +1651,8 @@
 	    this.updateAndSave = this.updateAndSave.bind(this);
 	    this.update = this.update.bind(this);
 	    this.save = this.save.bind(this);
+
+	    this.history = [];
 	  }
 
 	  if ( Component$$1 ) App.__proto__ = Component$$1;
@@ -1558,20 +1667,59 @@
 	    if (window.localStorage.length > 0) {
 	      this.load();
 	    }
+
+	    this.save();
 	  };
 
-	  App.prototype.save = function save () {
+	  App.prototype.undoAdd = function undoAdd (changes) {
+	    if (this.history.length > 30) { this.history.splice(0, 1); }
+
+	    this.history.push(changes);
+	  };
+
+	  App.prototype.undoRevert = function undoRevert (key, previousValue) {
+	    var lastItem = this.history[this.history.length - 1];
+
+	    lastItem.forEach(function (change) {
+	      STATE[change.key] = JSON.parse(change.prev);
+	      window.localStorage.setItem(change.key, change.prev);
+	    });
+
+	    STATE.update();
+
+	    if (this.history.length > 1) { this.history.splice(this.history.length - 1, 1); }
+	  };
+
+	  App.prototype.validateState = function validateState () {
 	    Object.keys(STATE).forEach(function (key) {
 	      if (key === 'update') { return }
 	      if (key === 'save') { return }
 	      if (key === 'updateAndSave') { return }
 
 	      if (STATE[key] === null || STATE[key] === undefined) {
-	        console.error(("STATE: Setting undefined to " + key));
+	        console.error(("STATE: Setting " + key + " is being set to undefined"));
 	      }
-
-	      window.localStorage.setItem(key, JSON.stringify(STATE[key]));
 	    });
+	  };
+
+	  App.prototype.save = function save () {
+	    var changes = [];
+
+	    Object.keys(STATE).forEach(function (key) {
+	      if (key === 'update') { return }
+	      if (key === 'save') { return }
+	      if (key === 'updateAndSave') { return }
+
+	      var prev = window.localStorage.getItem(key);
+	      var next = JSON.stringify(STATE[key]);
+
+	      if (prev !== next) {
+	        changes.push({ key: key, prev: prev === null ? JSON.stringify(STATE[key]) : prev }); // default to ram value if localStorage is empty  
+	        window.localStorage.setItem(key, next);
+	      }
+	    });
+
+	    this.undoAdd(changes);
 	  };
 
 	  App.prototype.load = function load () {
@@ -1581,10 +1729,14 @@
 	  };
 
 	  App.prototype.update = function update () {
+	    this.validateState();
+
 	    this.setState();
 	  };
 
 	  App.prototype.updateAndSave = function updateAndSave () {
+	    this.validateState();
+
 	    this.save();
 	    this.setState();
 	  };
@@ -1592,7 +1744,7 @@
 	  App.prototype.setTool = function setTool (tool) {
 	    STATE.tool = tool;
 
-	    this.updateAndSave();
+	    this.update();
 	  };
 
 	  App.prototype.setHSL = function setHSL (ref) {
@@ -1610,13 +1762,13 @@
 	    STATE.color[1] = RGB.g;
 	    STATE.color[2] = RGB.b;
 
-	    this.updateAndSave();
+	    this.update();
 	  };
 
 	  App.prototype.toggleView = function toggleView (view) {
 	    STATE[view] = !STATE[view];
 
-	    this.updateAndSave();
+	    this.update();
 	  };
 
 	  App.prototype.render = function render$$1 () {
@@ -1658,12 +1810,13 @@
 	                    return h( MenuButton, { action: item.action, icon: item.icon, label: item.label })
 	                  })
 	                )
-	              ),
-	              h( 'div', { class: 'bord-dark-r flex' },
-	                h( ToolBarButton, { action: function () { this$1.undo(); }, icon: 'undo.svg' })
+	              )
+	            ),
+	            h( 'div', { class: 'flex', style: 'max-width: 248px; min-width: 248px;' },
+	              h( 'div', { class: 'bord-dark-l bord-dark-r flex' },
+	                h( ToolBarButton, { action: function () { this$1.undoRevert(); }, icon: 'undo.svg' })
 	              )
 	            )
-
 	          )
 	        ),
 	        h( 'div', { class: 'flex', style: 'height: calc(100% - 39px);' },
@@ -1732,7 +1885,8 @@
 	            )
 	          ),
 	          h( Canvas, null ),
-	          h( 'div', { class: 'bg-light bord-dark-l', style: 'width: 300px;' },
+	          h( 'div', { class: 'bg-light bord-dark-l h-full', style: 'max-width: 248px; min-width: 248px;' },
+	            h( ColorPalette, null ),
 	            h( Layers, null )
 	          )
 	        )

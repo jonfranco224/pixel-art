@@ -5,6 +5,11 @@ export class Layers extends Component {
   addLayer () {
     STATE.layersCount += 1
 
+    CANVAS.offscreen.width = STATE.width
+    CANVAS.offscreen.height = STATE.height
+    const ctx = CANVAS.offscreen.getContext('2d')
+    ctx.clearRect(0, 0, STATE.width, STATE.height)
+
     STATE.layers.splice(
       STATE.layersActive,
       0,
@@ -13,7 +18,7 @@ export class Layers extends Component {
         locked: false,
         name: `Layer ${STATE.layersCount}`,
         paintActive: false,
-        image: ''
+        image: CANVAS.offscreen.toDataURL()
       }
     )
 
@@ -62,36 +67,44 @@ export class Layers extends Component {
   }
 
   render () {
-    return <div>
-      <div class='bg-mid bord-dark-b p-h-10 p-v-5 h-30'>
+    return <div class='fl-column' style='max-height: calc(100% - 200px); min-height: calc(100% - 200px);'>
+      <div class='bg-mid bord-dark-b bord-dark-t p-h-10 p-v-5 h-30'>
         <small style='position: relative; top: -1px;'><b>Layers</b></small>
       </div>
-      <div class='flex h-30 bord-dark-b w-full'>
-        <button onMouseUp={() => { this.addLayer() }} style='min-width: 30px;'>
-          <img src='img/plus.svg' />
-        </button>
-        <button onMouseUp={() => { this.moveLayerUp() }} class='bord-dark-l' data-request='moveLayerUp' style='min-width: 30px;'>
-          <img src='img/up.svg' />
-        </button>
-        <button onMouseUp={() => { this.moveLayerDown() }} class='bord-dark-l' data-request='moveLayerDown' style='min-width: 30px;'>
-          <img src='img/down.svg' />
-        </button>
-        <button onMouseUp={() => { this.deleteLayer() }} class='bord-dark-l bord-dark-r' data-request='deleteLayer' style='min-width: 30px;'>
-          <img src='img/trash.svg' />
-        </button>
+      <div class='flex h-30 bord-dark-b w-full fl-justify-between'>
+        <div class='flex'>
+          <button onMouseUp={() => { this.addLayer() }} class='w-30 flex flex-center'>
+            <img src='img/plus.svg' />
+          </button>
+          <button onMouseUp={() => { this.moveLayerUp() }} class='w-30 flex flex-center bord-dark-l' data-request='moveLayerUp'>
+            <img src='img/up.svg' />
+          </button>
+          <button onMouseUp={() => { this.moveLayerDown() }} class='w-30 flex flex-center bord-dark-l bord-dark-r' data-request='moveLayerDown'>
+            <img src='img/down.svg' />
+          </button>
+        </div>
+        <div class='flex'>
+          <button onMouseUp={() => { this.deleteLayer() }} class='w-30 flex flex-center bord-dark-l ' data-request='deleteLayer'>
+            <img src='img/trash.svg' />
+          </button>
+        </div>
+        
       </div>
-      {
-        STATE.layers.map((layer, i) => {
-          return <div class='w-full flex h-30 bord-light-b' style={{ background: i === STATE.layersActive ? 'rgb(100, 100, 100)' : 'transparent' }}>
-            <button onMouseUp={() => { this.toggleHidden(i) }} class={`flex flex-center w-30 no-hover ${layer.hidden ? 'bg-blue' : 'bg-transparent'}`}>
-              <img src={`img/${layer.hidden ? 'eye-active.svg' : 'eye.svg'}`} />
-            </button>
-            <button onMouseUp={() => { this.setLayerActive(i) }} class='flex flex-center-y fl-1'>
-              <b>{layer.name}</b>
-            </button>
-          </div>
-        })
-      }
+      <div class='fl-1 overflow'>
+        {
+          STATE.layers.map((layer, i) => {
+            return <div class='w-full flex h-30 bord-light-b' style={{ background: i === STATE.layersActive ? 'rgb(100, 100, 100)' : 'transparent' }}>
+              <button onMouseUp={() => { this.toggleHidden(i) }} class={`flex flex-center w-30 no-hover ${layer.hidden ? 'bg-blue' : 'bg-transparent'}`}>
+                <img src={`img/${layer.hidden ? 'eye-active.svg' : 'eye.svg'}`} />
+              </button>
+              <button onMouseUp={() => { this.setLayerActive(i) }} class='flex flex-center-y fl-1'>
+                <b>{layer.name}</b>
+              </button>
+            </div>
+          })
+        }
+      </div>
+      
     </div>
   }
 }

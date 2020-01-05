@@ -13,21 +13,6 @@ export class Canvas extends Component {
     // Orientation
     this.gestureStartScale = 0
     this.canvasContainer = createRef()
-
-    this.canvasMain = createRef()
-    this.canvasPreview = createRef()
-  }
-
-  setCanvas () {
-    CANVAS.main.dom = document.querySelector(`#canvas-main`)
-    CANVAS.main.ctx = CANVAS.main.dom.getContext('2d')
-    CANVAS.main.imageData = CANVAS.main.ctx.getImageData(0, 0, STATE.width, STATE.height)
-
-    CANVAS.preview.dom = document.querySelector(`#canvas-preview`)
-    CANVAS.preview.ctx = CANVAS.preview.dom.getContext('2d')
-    CANVAS.preview.imageData = CANVAS.preview.ctx.getImageData(0, 0, STATE.width, STATE.height)
-
-    CANVAS.emptyImageData = new window.ImageData(STATE.width, STATE.height)
   }
 
   componentDidUpdate () {
@@ -36,29 +21,6 @@ export class Canvas extends Component {
 
   async componentDidMount () {
     this.setCanvas()
-
-    // if we're loading from URL
-    // new canvas loaded from URL
-    // this needs its own undo history and such
-    // clean up if not saved locally
-    // if not, do below
-    if (window.localStorage.length === 0) {
-      //this.newCanvas(STATE.width, STATE.height)
-    } else {
-      //this.setupCanvases(STATE.width, STATE.height)
-
-      // console.time('load')
-      // const img = await base64ToImage(STATE.currentFrame)
-      // for (let i = 0; i < 50; i++) {
-      //   await base64ToImage(STATE.currentFrame)
-      // }
-      // console.timeEnd('load')
-
-      // CANVAS.main.ctx.drawImage(img, 0, 0)
-      // CANVAS.main.imageData = CANVAS.main.ctx.getImageData(0, 0, STATE.width, STATE.height)
-
-      //STATE.updateAndSave()
-    }
 
     const container = this.canvasContainer.current
     container.scrollTop = (container.scrollHeight - container.offsetHeight) / 2
@@ -128,6 +90,18 @@ export class Canvas extends Component {
     window.addEventListener('resize', resizeCanvas)
 
     resizeCanvas()
+  }
+
+  setCanvas () {
+    CANVAS.main.dom = document.querySelector(`#canvas-main`)
+    CANVAS.main.ctx = CANVAS.main.dom.getContext('2d')
+    CANVAS.main.imageData = CANVAS.main.ctx.getImageData(0, 0, STATE.width, STATE.height)
+
+    CANVAS.preview.dom = document.querySelector(`#canvas-preview`)
+    CANVAS.preview.ctx = CANVAS.preview.dom.getContext('2d')
+    CANVAS.preview.imageData = CANVAS.preview.ctx.getImageData(0, 0, STATE.width, STATE.height)
+
+    CANVAS.emptyImageData = new window.ImageData(STATE.width, STATE.height)
   }
 
   setOrientation (e, zoom) {
@@ -276,6 +250,14 @@ export class Canvas extends Component {
     if (STATE.tool === EYE_DROPPER && type === 'up') {
       let sampled = getColorAtPixel(CANVAS.main.imageData, currX, currY)
 
+      if (
+        sampled[0] === undefined || sampled[0] === null ||
+        sampled[1] === undefined || sampled[1] === null ||
+        sampled[2] === undefined || sampled[2] === null
+      ) {
+        return
+      }
+
       if (sampled[3] === 0) return // don't do anything if empty pixel
 
       STATE.color = sampled
@@ -303,7 +285,6 @@ export class Canvas extends Component {
   }
 
   render () {
-    // overflow: scroll; overflow: overlay;
     return (
       <div
         onGestureStart={(e) => { this.zoom(e) }}
@@ -312,8 +293,8 @@ export class Canvas extends Component {
         onWheel={(e) => { this.zoom(e) }}
         ref={this.canvasContainer}
         data-request='paintCanvas'
-        class='txt-center w-full'
-        style='crosshair; overflow: overlay; overflow: scroll;'>
+        class='txt-center w-full overflow'
+        style='cursor: crosshair;'>
         <div class='w-full h-full flex flex-center' data-request='paintCanvas' style='min-width: 1200px; min-height: 1200px;'>
           <div style={`position: relative; pointer-events: none; width: ${STATE.width * (800 / STATE.width)}px; height: 800px; transform: scale(${STATE.scale}) translateX(${STATE.translateX}px) translateY(${STATE.translateY}px); transform-origin: 50% 50%; background: white;`}>
             {
@@ -325,10 +306,10 @@ export class Canvas extends Component {
                   >
                     <img width={STATE.width} height={STATE.height} class='frame-img w-full h-full' src={`${layer.image}`} style={`visibility: ${layer.paintActive || layer.hidden ? 'hidden' : 'visible'};`} />
                     {i === STATE.layersActive &&
-                      <canvas ref={this.canvasMain} id={`canvas-main`} width={STATE.width} height={STATE.height} class='absolute w-full h-full' style='top: 0px; left: 0px; z-index: 1;' />
+                      <canvas id='canvas-main' width={STATE.width} height={STATE.height} class='absolute w-full h-full' style='top: 0px; left: 0px; z-index: 1;' />
                     }
                     {i === STATE.layersActive &&
-                      <canvas ref={this.canvasPreview} id={`canvas-preview`} width={STATE.width} height={STATE.height} class='absolute w-full h-full' style='top: 0px; left: 0px; z-index: 2;' />
+                      <canvas id='canvas-preview' width={STATE.width} height={STATE.height} class='absolute w-full h-full' style='top: 0px; left: 0px; z-index: 2;' />
                     }
                   </div>
                 </div>

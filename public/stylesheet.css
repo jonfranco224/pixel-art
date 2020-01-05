@@ -1,4 +1,7 @@
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+  touch-action: manipulation;
+}
 
 html {
   font-weight: 400;
@@ -6,6 +9,7 @@ html {
   -moz-osx-font-smoothing: grayscale;
   -webkit-font-smoothing: antialiased;
   font-smoothing: antialiased;
+  -webkit-tap-highlight-color: rgba(0,0,0,0);
 }
 
 a {
@@ -77,20 +81,23 @@ button {
   border: none;
   outline: none;
   cursor: pointer;
-  background: none;
+  background: rgba(0, 0, 0, 0);
   margin: 0;
 }
 
 button:not(.no-hover):hover {
-  background: rgb(100, 100, 100);
+  background: rgba(100, 100, 100, 1);
 }
 
-@media (max-width: 800px) {
-  button:hover {
-    background: transparent;
+@supports (-webkit-overflow-scrolling: touch) {
+  button:not(.no-hover):hover {
+    background: rgba(0, 0, 0, 0);
+  }
+
+  button:not(.no-hover):active { /* prevent annoying sticky hover effect on ios */
+    background: rgba(0, 0, 0, 0);
   }
 }
-
 
 canvas, .frame-img {
   image-rendering: -moz-crisp-edges;
@@ -108,8 +115,8 @@ select, select:focus {
 }
 
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   background-color: rgba(25,25,25);
 }
 
@@ -146,17 +153,21 @@ select, select:focus {
 
 .fl-column { display: flex; flex-direction: column;}
 .flex { display: flex; }
+.fl-wrap { flex-wrap: wrap; }
+.fl-justify-between { justify-content: space-between; }
 .fl-1 { flex: 1; }
 .fl-2 { flex: 2; }
 .fl-3 { flex: 3; }
 .fl-4 { flex: 4; }
+.fl-5 { flex: 5; }
+.fl-6 { flex: 6; }
 
 .w-full { width: 100%; }
 .h-full { height: 100%; }
 .h-35 { height: 35px; }
 .w-35 { width: 35px; }
 .w-30 { width: 30px; }
-.h-30 { height: 30px; }
+.h-30 { min-height: 30px; max-height: 30px; }
 .h-25 { height: 25px; }
 
 .p-h-10 { padding-left: 10px; padding-right: 10px; }
@@ -181,6 +192,8 @@ select, select:focus {
 .absolute { position: absolute; }
 .top { top: 0px; }
 .left { left: 0px; }
+
+.overflow { overflow: overlay; overflow: scroll; }
 
 input[type=range] {
   height: 20px;

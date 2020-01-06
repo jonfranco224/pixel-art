@@ -92,6 +92,9 @@ export default class App extends Component {
     const lastItem = this.history[this.history.length - 1]
 
     lastItem.forEach(change => {
+      if (change.key === 'tool') return
+      if (change.key === 'colorPickerOpen') return
+
       STATE[change.key] = JSON.parse(change.prev)
       window.localStorage.setItem(change.key, change.prev)
     })
@@ -120,6 +123,8 @@ export default class App extends Component {
       if (key === 'update') return
       if (key === 'save') return
       if (key === 'updateAndSave') return
+      if (key === 'tool') return
+      if (key === 'colorPickerOpen') return
 
       const prev = window.localStorage.getItem(key)
       const next = JSON.stringify(STATE[key])

@@ -703,6 +703,7 @@
 	function createRef() {
 		return {};
 	}
+	//# sourceMappingURL=preact.mjs.map
 
 	var CANVAS = Object.seal({
 	  offscreen: document.createElement('canvas'),
@@ -1694,6 +1695,9 @@
 	    var lastItem = this.history[this.history.length - 1];
 
 	    lastItem.forEach(function (change) {
+	      if (change.key === 'tool') { return }
+	      if (change.key === 'colorPickerOpen') { return }
+
 	      STATE[change.key] = JSON.parse(change.prev);
 	      window.localStorage.setItem(change.key, change.prev);
 	    });
@@ -1722,6 +1726,8 @@
 	      if (key === 'update') { return }
 	      if (key === 'save') { return }
 	      if (key === 'updateAndSave') { return }
+	      if (key === 'tool') { return }
+	      if (key === 'colorPickerOpen') { return }
 
 	      var prev = window.localStorage.getItem(key);
 	      var next = JSON.stringify(STATE[key]);

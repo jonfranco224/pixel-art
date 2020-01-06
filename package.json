@@ -17,7 +17,9 @@
   },
   "scripts": {
     "build": "rollup -c",
-    "watch": "rollup -c -w"
+    "watch": "rollup -c -w",
+    "staging": "heroku push origin staging",
+    "prod": "heroku push origin production"
   },
   "author": ""
 }

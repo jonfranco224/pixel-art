@@ -1,6 +1,6 @@
 import { h, Component } from 'preact'
 import { HSLtoRGB } from './utils'
-import { STATE } from './state'
+import { STATE, CANVAS } from './state'
 import { Canvas } from './canvas'
 import { Layers } from './layers'
 import { ColorPalette } from './color-palette'
@@ -116,7 +116,7 @@ export default class App extends Component {
       const next = JSON.stringify(STATE[key])
 
       if (prev !== next) {
-        changes.push({ key, prev: prev === null ? JSON.stringify(STATE[key]) : prev }) // default to ram value if localStorage is empty  
+        changes.push({ key, prev: prev === null ? JSON.stringify(STATE[key]) : prev }) // default to ram value if localStorage is empty
         window.localStorage.setItem(key, next)
       }
     })
@@ -169,10 +169,64 @@ export default class App extends Component {
     this.update()
   }
 
+  newCanvas (w, h) {
+    CANVAS.offscreen.width = w
+    CANVAS.offscreen.height = h
+
+    const base64 = CANVAS.offscreen.toDataURL()
+
+    STATE.width = w
+    STATE.height = h
+    STATE.scale = 0.75
+    STATE.translateX = 0
+    STATE.translateY = 0
+    STATE.tool = 0
+  
+    STATE.currentFrame = ''
+  
+    // Layers
+    STATE.layersActive = 0
+    STATE.layersCount = 1
+    STATE.layers = [
+      {
+        hidden: false,
+        locked: false,
+        name: 'Layer 1',
+        paintActive: false,
+        image: base64
+      }
+    ]
+
+    STATE.modalOpen = false
+
+    STATE.updateAndSave()
+  }
+
+  downloadCanvas (e, scaleFactor) {
+    console.log('here')
+    //const scaleFactor = parseInt(document.querySelector('#config-download-size').value)
+    const c = document.createElement('canvas')
+    const ctx = c.getContext('2d')
+
+    c.width = STATE.width * scaleFactor
+    c.height = STATE.height * scaleFactor
+    ctx.webkitImageSmoothingEnabled = false
+    ctx.mozImageSmoothingEnabled = false
+    ctx.imageSmoothingEnabled = false
+    const images = document.querySelectorAll('.image-container')
+
+    for (let i = images.length - 1; i >= 0; i--) {
+      ctx.drawImage(images[i].children[0], 0, 0, c.width, c.height)
+    }
+
+    const image = c.toDataURL('image/png').replace('image/png', 'image/octet-stream')
+    e.target.setAttribute('href', image)
+  }
+
   render () {
     console.log('View Rendered')
     return (
-      <div class='h-full'>
+      <div class='h-full relative'>
         <div class='bg-light bord-dark-b flex' style='min-height: 39px; max-height: 39px;'>
           <div class='flex w-full'>
             <div class='fl-1 flex'>
@@ -186,6 +240,8 @@ export default class App extends Component {
                       action: () => {
                         // launch modal
                         this.toggleView('fileOpen')
+                        STATE.modalIndex = 0
+                        this.toggleView('modalOpen')
                       }
                     }, {
                       icon: 'download.svg',
@@ -193,15 +249,18 @@ export default class App extends Component {
                       action: () => {
                         // launch modal
                         this.toggleView('fileOpen')
+                        STATE.modalIndex = 1
+                        this.toggleView('modalOpen')
                       }
-                    }, {
+                    }
+                    /*, {
                       icon: 'link.svg',
                       label: 'Share',
                       action: () => {
                         // laundch modal
                         this.toggleView('fileOpen')
                       }
-                    }
+                    } */
                   ].map((item, i) => {
                     return <MenuButton action={item.action} icon={item.icon} label={item.label} />
                   })}
@@ -307,6 +366,97 @@ export default class App extends Component {
             <Layers />
           </div>
         </div>
+        {STATE.modalOpen && <div class='absolute top left w-full h-full flex flex-center-x' style='z-index: 10;'>
+          {STATE.modalIndex === 0 &&
+            <div class='bord-r-2 w-full' style='max-width: 300px; overflow: hidden; margin-top: 175px; '>
+              <div class='flex flex-center bg-mid bord-dark p-v-5'>
+                <small class='bold'>New Canvas</small>
+              </div>
+              <div class='p-10 bg-light'>
+                <div class='m-5 p-v-5'>
+                  <div class='flex flex-center'>
+                    <small style='width: 150px;' class='bold'>Dimensions</small>
+                    <select id='config-canvas-dimensions' class='w-full'>
+                      <option value='32x32'>32x32</option>
+                      <option value='50x50'>50x50</option>
+                      <option value='64x64'>64x64</option>
+                      <option value='100x100'>100x100</option>
+                      <option value='128x128'>128x128</option>
+                      <option value='256x256'>256x256</option>
+                    </select>
+                  </div>
+                </div>
+                <div class='flex' style='padding-top: 5px;'>
+                  <button
+                    class='b-r-2 bold p-5 w-full bg-red m-5'
+                    onClick={() => {
+                      this.toggleView('modalOpen')
+                    }}
+                  >Cancel</button>
+                  <button
+                    class='b-r-2 bold p-5 w-full bg-green m-5'
+                    onClick={() => {
+                      const val = document.querySelector('#config-canvas-dimensions').value
+                      const wh = val.split('x')
+
+                      this.newCanvas(parseInt(wh[0]), parseInt(wh[1]))
+                    }}
+                  >Confirm</button>
+                </div>
+              </div>
+            </div>
+          }
+          {STATE.modalIndex === 1 &&
+            <div class='bord-r-2 w-full' style='max-width: 300px; overflow: hidden; margin-top: 175px; '>
+              <div class='flex flex-center bg-mid bord-dark p-v-5'>
+                <small class='bold'>Download</small>
+              </div>
+              <div class='p-10 bg-light'>
+                <div class='m-5 p-v-5'>
+                  <div class='flex flex-center'>
+                    <small style='width: 150px;' class='bold'>Size</small>
+                    <select id='config-download-size' class='w-full'>
+                      <option value='2'>2x</option>
+                      <option value='4'>4x</option>
+                      <option value='8'>8x</option>
+                      <option value='16'>16x</option>
+                      <option value='32'>32x</option>
+                      <option value='64'>64x</option>
+                    </select>
+                  </div>
+                </div>
+                <div class='flex' style='padding-top: 5px;'>
+                  <button
+                    class='b-r-2 bold p-5 w-full bg-red m-5'
+                    onClick={() => {
+                      this.toggleView('modalOpen')
+                    }}
+                  >Cancel</button>
+
+                  <a
+                    class="w-full m-5 clickable"
+                    style="display: inline-block;"
+                    download="pixel-art.png"
+                    onClick={(e) => {
+                      const val = parseInt(document.querySelector('#config-download-size').value)
+                      this.downloadCanvas(e, val)
+                    }}
+                    >
+                    <button class="b-r-2 bold p-5 w-full bg-green" style="pointer-events: none;">Download</button>
+                  </a>
+                  {/*<button
+                    class='b-r-2 bold p-5 w-full bg-green m-5'
+                    download='pixel-art.png'
+                    onClick={(e) => {
+                      const val = parseInt(document.querySelector('#config-download-size').value)
+                      this.downloadCanvas(e, val)
+                    }}
+                  >Confirm</button>*/}
+                </div>
+              </div>
+            </div>
+          }
+        </div>}
       </div>
     )
   }

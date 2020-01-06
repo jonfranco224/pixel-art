@@ -160,6 +160,8 @@ export class Canvas extends Component {
   }
 
   paintCanvas (type, WINDOW) {
+    if (STATE.modalOpen) return
+
     const PENCIL = 0
     const ERASER = 1
     const LINE = 2
@@ -301,7 +303,7 @@ export class Canvas extends Component {
               STATE.layers.map((layer, i) => {
                 return <div class='absolute' style={`z-index: ${STATE.layers.length - 1 - i}; width: calc(100% - ${this.padding * 2}px); height: calc(100% - ${this.padding * 2}px); top: ${this.padding}px; left: ${this.padding}px;`}>
                   <div
-                    class='relative w-full h-full'
+                    class='relative w-full h-full image-container'
                     style={layer.hidden ? `visibility: hidden; pointer-events: none;` : ''}
                   >
                     <img width={STATE.width} height={STATE.height} class='frame-img w-full h-full' src={`${layer.image}`} style={`visibility: ${layer.paintActive || layer.hidden ? 'hidden' : 'visible'};`} />

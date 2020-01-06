@@ -77,6 +77,8 @@ export const STATE = Object.seal({
   // UI
   colorPickerOpen: false,
   fileOpen: false,
+  modalOpen: false,
+  modalIndex: 0,
 
   // Update utility functions
   update: undefined,

@@ -784,6 +784,8 @@
 	  // UI
 	  colorPickerOpen: false,
 	  fileOpen: false,
+	  modalOpen: false,
+	  modalIndex: 0,
 
 	  // Update utility functions
 	  update: undefined,
@@ -1237,6 +1239,8 @@
 	  };
 
 	  Canvas.prototype.paintCanvas = function paintCanvas (type, WINDOW) {
+	    if (STATE.modalOpen) { return }
+
 	    var PENCIL = 0;
 	    var ERASER = 1;
 	    var LINE = 2;
@@ -1372,7 +1376,7 @@
 	            STATE.layers.map(function (layer, i) {
 	                return h( 'div', { class: 'absolute', style: ("z-index: " + (STATE.layers.length - 1 - i) + "; width: calc(100% - " + (this$1.padding * 2) + "px); height: calc(100% - " + (this$1.padding * 2) + "px); top: " + (this$1.padding) + "px; left: " + (this$1.padding) + "px;") },
 	                  h( 'div', {
-	                    class: 'relative w-full h-full', style: layer.hidden ? "visibility: hidden; pointer-events: none;" : '' },
+	                    class: 'relative w-full h-full image-container', style: layer.hidden ? "visibility: hidden; pointer-events: none;" : '' },
 	                    h( 'img', { width: STATE.width, height: STATE.height, class: 'frame-img w-full h-full', src: ("" + (layer.image)), style: ("visibility: " + (layer.paintActive || layer.hidden ? 'hidden' : 'visible') + ";") }),
 	                    i === STATE.layersActive &&
 	                      h( 'canvas', { id: 'canvas-main', width: STATE.width, height: STATE.height, class: 'absolute w-full h-full', style: 'top: 0px; left: 0px; z-index: 1;' }),
@@ -1714,7 +1718,7 @@
 	      var next = JSON.stringify(STATE[key]);
 
 	      if (prev !== next) {
-	        changes.push({ key: key, prev: prev === null ? JSON.stringify(STATE[key]) : prev }); // default to ram value if localStorage is empty  
+	        changes.push({ key: key, prev: prev === null ? JSON.stringify(STATE[key]) : prev }); // default to ram value if localStorage is empty
 	        window.localStorage.setItem(key, next);
 	      }
 	    });
@@ -1771,12 +1775,66 @@
 	    this.update();
 	  };
 
+	  App.prototype.newCanvas = function newCanvas (w, h$$1) {
+	    CANVAS.offscreen.width = w;
+	    CANVAS.offscreen.height = h$$1;
+
+	    var base64 = CANVAS.offscreen.toDataURL();
+
+	    STATE.width = w;
+	    STATE.height = h$$1;
+	    STATE.scale = 0.75;
+	    STATE.translateX = 0;
+	    STATE.translateY = 0;
+	    STATE.tool = 0;
+	  
+	    STATE.currentFrame = '';
+	  
+	    // Layers
+	    STATE.layersActive = 0;
+	    STATE.layersCount = 1;
+	    STATE.layers = [
+	      {
+	        hidden: false,
+	        locked: false,
+	        name: 'Layer 1',
+	        paintActive: false,
+	        image: base64
+	      }
+	    ];
+
+	    STATE.modalOpen = false;
+
+	    STATE.updateAndSave();
+	  };
+
+	  App.prototype.downloadCanvas = function downloadCanvas (e, scaleFactor) {
+	    console.log('here');
+	    //const scaleFactor = parseInt(document.querySelector('#config-download-size').value)
+	    var c = document.createElement('canvas');
+	    var ctx = c.getContext('2d');
+
+	    c.width = STATE.width * scaleFactor;
+	    c.height = STATE.height * scaleFactor;
+	    ctx.webkitImageSmoothingEnabled = false;
+	    ctx.mozImageSmoothingEnabled = false;
+	    ctx.imageSmoothingEnabled = false;
+	    var images = document.querySelectorAll('.image-container');
+
+	    for (var i = images.length - 1; i >= 0; i--) {
+	      ctx.drawImage(images[i].children[0], 0, 0, c.width, c.height);
+	    }
+
+	    var image = c.toDataURL('image/png').replace('image/png', 'image/octet-stream');
+	    e.target.setAttribute('href', image);
+	  };
+
 	  App.prototype.render = function render$$1 () {
 	    var this$1 = this;
 
 	    console.log('View Rendered');
 	    return (
-	      h( 'div', { class: 'h-full' },
+	      h( 'div', { class: 'h-full relative' },
 	        h( 'div', { class: 'bg-light bord-dark-b flex', style: 'min-height: 39px; max-height: 39px;' },
 	          h( 'div', { class: 'flex w-full' },
 	            h( 'div', { class: 'fl-1 flex' },
@@ -1790,6 +1848,8 @@
 	                      action: function () {
 	                        // launch modal
 	                        this$1.toggleView('fileOpen');
+	                        STATE.modalIndex = 0;
+	                        this$1.toggleView('modalOpen');
 	                      }
 	                    }, {
 	                      icon: 'download.svg',
@@ -1797,16 +1857,10 @@
 	                      action: function () {
 	                        // launch modal
 	                        this$1.toggleView('fileOpen');
+	                        STATE.modalIndex = 1;
+	                        this$1.toggleView('modalOpen');
 	                      }
-	                    }, {
-	                      icon: 'link.svg',
-	                      label: 'Share',
-	                      action: function () {
-	                        // laundch modal
-	                        this$1.toggleView('fileOpen');
-	                      }
-	                    }
-	                  ].map(function (item, i) {
+	                    } ].map(function (item, i) {
 	                    return h( MenuButton, { action: item.action, icon: item.icon, label: item.label })
 	                  })
 	                )
@@ -1889,6 +1943,85 @@
 	            h( ColorPalette, null ),
 	            h( Layers, null )
 	          )
+	        ),
+	        STATE.modalOpen && h( 'div', { class: 'absolute top left w-full h-full flex flex-center-x', style: 'z-index: 10;' },
+	          STATE.modalIndex === 0 &&
+	            h( 'div', { class: 'bord-r-2 w-full', style: 'max-width: 300px; overflow: hidden; margin-top: 175px; ' },
+	              h( 'div', { class: 'flex flex-center bg-mid bord-dark p-v-5' },
+	                h( 'small', { class: 'bold' }, "New Canvas")
+	              ),
+	              h( 'div', { class: 'p-10 bg-light' },
+	                h( 'div', { class: 'm-5 p-v-5' },
+	                  h( 'div', { class: 'flex flex-center' },
+	                    h( 'small', { style: 'width: 150px;', class: 'bold' }, "Dimensions"),
+	                    h( 'select', { id: 'config-canvas-dimensions', class: 'w-full' },
+	                      h( 'option', { value: '32x32' }, "32x32"),
+	                      h( 'option', { value: '50x50' }, "50x50"),
+	                      h( 'option', { value: '64x64' }, "64x64"),
+	                      h( 'option', { value: '100x100' }, "100x100"),
+	                      h( 'option', { value: '128x128' }, "128x128"),
+	                      h( 'option', { value: '256x256' }, "256x256")
+	                    )
+	                  )
+	                ),
+	                h( 'div', { class: 'flex', style: 'padding-top: 5px;' },
+	                  h( 'button', {
+	                    class: 'b-r-2 bold p-5 w-full bg-red m-5', onClick: function () {
+	                      this$1.toggleView('modalOpen');
+	                    } }, "Cancel"),
+	                  h( 'button', {
+	                    class: 'b-r-2 bold p-5 w-full bg-green m-5', onClick: function () {
+	                      var val = document.querySelector('#config-canvas-dimensions').value;
+	                      var wh = val.split('x');
+
+	                      this$1.newCanvas(parseInt(wh[0]), parseInt(wh[1]));
+	                    } }, "Confirm")
+	                )
+	              )
+	            ),
+	          STATE.modalIndex === 1 &&
+	            h( 'div', { class: 'bord-r-2 w-full', style: 'max-width: 300px; overflow: hidden; margin-top: 175px; ' },
+	              h( 'div', { class: 'flex flex-center bg-mid bord-dark p-v-5' },
+	                h( 'small', { class: 'bold' }, "Download")
+	              ),
+	              h( 'div', { class: 'p-10 bg-light' },
+	                h( 'div', { class: 'm-5 p-v-5' },
+	                  h( 'div', { class: 'flex flex-center' },
+	                    h( 'small', { style: 'width: 150px;', class: 'bold' }, "Size"),
+	                    h( 'select', { id: 'config-download-size', class: 'w-full' },
+	                      h( 'option', { value: '2' }, "2x"),
+	                      h( 'option', { value: '4' }, "4x"),
+	                      h( 'option', { value: '8' }, "8x"),
+	                      h( 'option', { value: '16' }, "16x"),
+	                      h( 'option', { value: '32' }, "32x"),
+	                      h( 'option', { value: '64' }, "64x")
+	                    )
+	                  )
+	                ),
+	                h( 'div', { class: 'flex', style: 'padding-top: 5px;' },
+	                  h( 'button', {
+	                    class: 'b-r-2 bold p-5 w-full bg-red m-5', onClick: function () {
+	                      this$1.toggleView('modalOpen');
+	                    } }, "Cancel"),
+
+	                  h( 'a', {
+	                    class: "w-full m-5 clickable", style: "display: inline-block;", download: "pixel-art.png", onClick: function (e) {
+	                      var val = parseInt(document.querySelector('#config-download-size').value);
+	                      this$1.downloadCanvas(e, val);
+	                    } },
+	                    h( 'button', { class: "b-r-2 bold p-5 w-full bg-green", style: "pointer-events: none;" }, "Download")
+	                  )
+	                  /*<button
+	                    class='b-r-2 bold p-5 w-full bg-green m-5'
+	                    download='pixel-art.png'
+	                    onClick={(e) => {
+	                      const val = parseInt(document.querySelector('#config-download-size').value)
+	                      this.downloadCanvas(e, val)
+	                    }}
+	                  >Confirm</button>*/
+	                )
+	              )
+	            )
 	        )
 	      )
 	    )

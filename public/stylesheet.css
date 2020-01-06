@@ -193,7 +193,7 @@ select, select:focus {
 .top { top: 0px; }
 .left { left: 0px; }
 
-.overflow { overflow: overlay; overflow: scroll; }
+.overflow { overflow: scroll; overflow: overlay; }
 
 input[type=range] {
   height: 20px;

@@ -125,6 +125,11 @@ export default class App extends Component {
   }
 
   load () {
+    // deprecating old local storage
+    window.localStorage.removeItem('pixel_height')
+    window.localStorage.removeItem('pixel_width')
+    window.localStorage.removeItem('pixel_history')
+
     Object.keys(window.localStorage).forEach(key => {
       STATE[key] = JSON.parse(window.localStorage.getItem(key))
     })
@@ -203,7 +208,6 @@ export default class App extends Component {
   }
 
   downloadCanvas (e, scaleFactor) {
-    //const scaleFactor = parseInt(document.querySelector('#config-download-size').value)
     const c = document.createElement('canvas')
     const ctx = c.getContext('2d')
 

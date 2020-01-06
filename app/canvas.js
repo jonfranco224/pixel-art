@@ -88,6 +88,7 @@ export class Canvas extends Component {
     }
 
     window.addEventListener('resize', resizeCanvas)
+    window.addEventListener('contextmenu', (e) => { e.preventDefault() }, { passive: false })
 
     resizeCanvas()
   }

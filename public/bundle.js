@@ -1167,6 +1167,7 @@
 	    };
 
 	    window.addEventListener('resize', resizeCanvas);
+	    window.addEventListener('contextmenu', function (e) { e.preventDefault(); }, { passive: false });
 
 	    resizeCanvas();
 	  };
@@ -1727,6 +1728,11 @@
 	  };
 
 	  App.prototype.load = function load () {
+	    // deprecating old local storage
+	    window.localStorage.removeItem('pixel_height');
+	    window.localStorage.removeItem('pixel_width');
+	    window.localStorage.removeItem('pixel_history');
+
 	    Object.keys(window.localStorage).forEach(function (key) {
 	      STATE[key] = JSON.parse(window.localStorage.getItem(key));
 	    });
@@ -1809,8 +1815,6 @@
 	  };
 
 	  App.prototype.downloadCanvas = function downloadCanvas (e, scaleFactor) {
-	    console.log('here');
-	    //const scaleFactor = parseInt(document.querySelector('#config-download-size').value)
 	    var c = document.createElement('canvas');
 	    var ctx = c.getContext('2d');
 

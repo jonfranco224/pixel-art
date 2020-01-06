@@ -203,7 +203,6 @@ export default class App extends Component {
   }
 
   downloadCanvas (e, scaleFactor) {
-    console.log('here')
     //const scaleFactor = parseInt(document.querySelector('#config-download-size').value)
     const c = document.createElement('canvas')
     const ctx = c.getContext('2d')

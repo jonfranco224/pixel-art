@@ -703,7 +703,6 @@
 	function createRef() {
 		return {};
 	}
-	//# sourceMappingURL=preact.mjs.map
 
 	var CANVAS = Object.seal({
 	  offscreen: document.createElement('canvas'),
@@ -1674,6 +1673,15 @@
 	    }
 
 	    this.save();
+	  };
+
+	  App.prototype.componentDidMount = function componentDidMount () {
+	    // Adding google analytics
+	    window.dataLayer = window.dataLayer || [];
+	    function gtag(){dataLayer.push(arguments);}
+	    gtag('js', new Date());
+
+	    gtag('config', 'UA-144729452-1');
 	  };
 
 	  App.prototype.undoAdd = function undoAdd (changes) {

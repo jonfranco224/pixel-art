@@ -73,6 +73,15 @@ export default class App extends Component {
     this.save()
   }
 
+  componentDidMount () {
+    // Adding google analytics
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'UA-144729452-1');
+  }
+
   undoAdd (changes) {
     if (this.history.length > 30) this.history.splice(0, 1)
 

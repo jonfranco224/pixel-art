@@ -8,9 +8,7 @@ Demo: [https://pixel-art-app.herokuapp.com/](https://pixel-art-app.herokuapp.com
 
 ## Installation
 
-The app is built only with [adom-js](https://github.com/mllev/a.dom), so the installation step is simple.
-
-
-```bash
+```
 npm install
+npm run dev
 ```

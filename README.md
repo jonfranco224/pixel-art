@@ -10,5 +10,5 @@ Demo: [https://pixel-art-app.herokuapp.com/](https://pixel-art-app.herokuapp.com
 
 ```
 npm install
-npm run dev
+npm run watch
 ```

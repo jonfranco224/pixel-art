@@ -10,7 +10,6 @@
     "rollup-plugin-buble": "^0.19.6",
     "rollup-plugin-es3": "^1.0.3",
     "rollup-plugin-node-resolve": "^4.0.0",
-    "rollup-plugin-sass": "^0.9.3",
     "rollup-plugin-svgi": "^0.1.0",
     "rollup-plugin-uglify": "^6.0.0",
     "rollup-watch": "^4.3.1"

@@ -1,6 +1,6 @@
 # Pixel Art
 
-A minimalist, cross device compatible pixel-art editor. Demo: [https://pixel-art-app.herokuapp.com/](https://pixel-art-app.herokuapp.com/)
+A minimalist, cross device compatible pixel-art editor. [https://pixel-art-app.herokuapp.com/](https://pixel-art-app.herokuapp.com/)
 
 ![Pixel Art](https://media1.giphy.com/media/lNWs3R5c8FZhY4836f/giphy.gif)
 

@@ -1,3 +1,4 @@
+
 export const RGBtoHSL = (rgb) => {
   // Make r, g, and b fractions of 1
   let r = rgb[0] / 255
@@ -36,7 +37,7 @@ export const RGBtoHSL = (rgb) => {
   s = +(s * 100).toFixed(1)
   l = +(l * 100).toFixed(1)
 
-  return [ h, s, l, 255 ]
+  return [ Math.floor(h), Math.floor(s), Math.floor(l), 255 ]
 }
 
 export const HSLtoRGB = (hsl) => {

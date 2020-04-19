@@ -144,6 +144,13 @@ class View extends Component{
 
     this.timelineScrollController()
     this.centerCanvas()
+
+    // Adding google analytics
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'UA-144729452-1');
   }
 
   centerCanvas () {

@@ -1357,6 +1357,10 @@
 
 	  // Points
 	  if (APP.tool === 'pencil' || APP.tool === 'eraser') {
+	    if (APP.tool === 'eraser') {
+	      setBrushPoints(preview, currX, currY, APP.width, APP.height, [0, 0, 0, 50]);
+	    }
+	    
 	    line(prevX, prevY, currX, currY, function (x, y) {
 	      setBrushPoints(target, x, y, APP.width, APP.height, APP.tool === 'pencil' ? APP.color.rgb : [0, 0, 0, 0]);
 	    });
@@ -1368,7 +1372,6 @@
 	    
 	    funcs[APP.tool](startX, startY, currX, currY, function (x, y) {
 	      setBrushPoints(gestureEvent === 'start' || gestureEvent === 'resume' ? preview : target, x, y, APP.width, APP.height, APP.color.rgb);
-	      // setPoint(gestureEvent === 'start' || gestureEvent === 'resume' ? preview : target, x, y, APP.width, APP.height, APP.color.rgb)
 	    });
 	  }
 

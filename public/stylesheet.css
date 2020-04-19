@@ -295,3 +295,28 @@ input[type='range']::-moz-range-thumb {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 8 8'%3E%3Cg fill='%23787878' fill-opacity='1'%3E%3Cpath fill-rule='evenodd' d='M0 0h4v4H0V0zm4 4h4v4H4V4z'/%3E%3C/g%3E%3C/svg%3E");
 }
 
+.cursor-pencil, .cursor-line, .cursor-square, .cursor-circle {
+  cursor: crosshair;
+}
+
+.cursor-eraser {
+  cursor: none;
+}
+
+.cursor-eye-dropper {
+  cursor: crosshair;
+  cursor: url('./img/eye-dropper.svg') -8 6, auto;
+}
+
+.cursor-fill {
+  cursor: crosshair;
+  cursor: url('./img/fill.svg') 6 6, auto;
+}
+
+.cursor-move {
+  cursor: url('./img/move.svg') 6 6, auto;
+}
+
+
+
+

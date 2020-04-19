@@ -699,6 +699,7 @@
 	function render(vnode, parent, merge) {
 	  return diff(merge, vnode, {}, false, parent, false);
 	}
+	//# sourceMappingURL=preact.mjs.map
 
 	var RGBtoHSL = function (rgb) {
 	  // Make r, g, and b fractions of 1
@@ -1318,7 +1319,7 @@
 	    });
 	  };
 
-	  if (gestureEvent === 'hover' && APP.tool !== 'eye-dropper' && APP.tool !== 'fill' && APP.tool !== 'move') {
+	  if (gestureEvent === 'hover' && APP.tool !== 'eye-dropper' && APP.tool !== 'move') {
 	    setBrushPoints(preview, currX, currY, APP.width, APP.height, APP.tool !== 'eraser' ? APP.color.rgb : [0, 0, 0, 50]);
 	    VIEW.render();
 
@@ -2185,7 +2186,8 @@
 	              )
 	          ),
 	          h( 'div', { class: 'fl-column', style: 'width: calc(100% - 281px);' },
-	            h( 'div', { id: 'canvas-outer-scroll', class: 'overflow fl-1', style: 'cursor: crosshair;' },
+	            h( 'div', {
+	              id: 'canvas-outer-scroll', class: ("overflow fl-1 cursor-" + (APP.tool)) },
 	              h( Canvas, null )
 	            ),
 	            h( Timeline, null )

@@ -294,7 +294,7 @@ export const paintCanvas = (gestureEvent) => {
     })
   }
 
-  if (gestureEvent === 'hover' && APP.tool !== 'eye-dropper' && APP.tool !== 'fill' && APP.tool !== 'move') {
+  if (gestureEvent === 'hover' && APP.tool !== 'eye-dropper' && APP.tool !== 'move') {
     setBrushPoints(preview, currX, currY, APP.width, APP.height, APP.tool !== 'eraser' ? APP.color.rgb : [0, 0, 0, 50])
     VIEW.render()
 

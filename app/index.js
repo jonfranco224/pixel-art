@@ -329,7 +329,9 @@ class View extends Component{
             }
           </div>
           <div class='fl-column' style='width: calc(100% - 281px);'>
-            <div id='canvas-outer-scroll' class='overflow fl-1' style='cursor: crosshair;'>
+            <div
+              id='canvas-outer-scroll'
+              class={`overflow fl-1 cursor-${APP.tool}`}>
               <Canvas />
             </div>
             <Timeline />

@@ -101,8 +101,6 @@ const initViewDefault = (preventOnMount) => {
     initCanvases()
   }
 
-
-
   Object.seal(VIEW)
 }
 

@@ -1,6 +1,5 @@
 import { VIEW } from './data'
 
-// Undo / Redo
 export const addToUndo = (action, type = '') => {
   VIEW.undo.splice(0, VIEW.undoPos + 1, {
     icon: `${action}.svg`,

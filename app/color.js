@@ -146,6 +146,5 @@ export const Color = () => {
         </div>
       </div>
     </div>
-    
   )
 }

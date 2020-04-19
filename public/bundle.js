@@ -699,7 +699,6 @@
 	function render(vnode, parent, merge) {
 	  return diff(merge, vnode, {}, false, parent, false);
 	}
-	//# sourceMappingURL=preact.mjs.map
 
 	var RGBtoHSL = function (rgb) {
 	  // Make r, g, and b fractions of 1
@@ -876,8 +875,6 @@
 	    initCanvases();
 	  }
 
-
-
 	  Object.seal(VIEW);
 	};
 
@@ -886,7 +883,6 @@
 	  initViewDefault(preventOnMount);
 	};
 
-	// Undo / Redo
 	var addToUndo = function (action, type) {
 	  if ( type === void 0 ) type = '';
 
@@ -1028,7 +1024,6 @@
 	        )
 	      )
 	    )
-	    
 	  )
 	};
 
@@ -2013,6 +2008,13 @@
 
 	    this.timelineScrollController();
 	    this.centerCanvas();
+
+	    // Adding google analytics
+	    window.dataLayer = window.dataLayer || [];
+	    function gtag(){dataLayer.push(arguments);}
+	    gtag('js', new Date());
+
+	    gtag('config', 'UA-144729452-1');
 	  };
 
 	  View.prototype.centerCanvas = function centerCanvas () {

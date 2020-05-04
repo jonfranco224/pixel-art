@@ -3,7 +3,7 @@
   "version": "0.3.0",
   "dependencies": {
     "express": "^4.17.1",
-    "preact": "^8.4.2"
+    "preact": "^10.1.0"
   },
   "devDependencies": {
     "rollup": "^0.68.2",
@@ -15,8 +15,8 @@
     "rollup-watch": "^4.3.1"
   },
   "scripts": {
-    "build": "rollup -c",
-    "watch": "rollup -c -w",
+    "dev": "rollup -c -w --environment DEV",
+    "build": "rollup -c --environment PROD",
     "staging": "git push staging",
     "prod": "git push production"
   },

@@ -1,4 +1,4 @@
-import { VIEW } from './data'
+import { VIEW } from './state'
 
 export const addToUndo = (action, type = '') => {
   VIEW.undo.splice(0, VIEW.undoPos + 1, {

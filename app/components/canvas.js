@@ -1,12 +1,7 @@
 import { h, render } from 'preact'
-import { APP, VIEW, canvases } from './data'
-import { addToUndo } from './undo-redo'
-import { colorSetRGB } from './color'
-
-export const setTool = (tool) => {
-  APP.tool = tool
-  VIEW.render()
-}
+import { APP, VIEW } from '../state'
+import { addToUndo } from '../undo-redo'
+import { setRGB } from './color'
 
 const getPoint = (imgDataArr, x, y, w, h) => {
   if (!imgDataArr) throw Error(`setPoint: ${imgDataArr} undefined`)
@@ -202,7 +197,7 @@ const circle = (xCenter, yCenter, currX, currY, func) => {
   }
 }
 
-function squareFilled (startX, startY, endX, endY, w, h, color, func) {
+const squareFilled = (startX, startY, endX, endY, w, h, color, func) => {
   let points = []
 
   let dx = Math.abs(endX - startX)
@@ -322,7 +317,7 @@ export const paintCanvas = (gestureEvent) => {
     const color = getPoint(target, currX, currY, APP.width, APP.height)
     
     if (color[3] !== 0) {
-      colorSetRGB(color)
+      setRGB(color)
     }
   }
 
@@ -403,11 +398,13 @@ export const paintCanvas = (gestureEvent) => {
 }
 
 export const Canvas = () => {
-  return <div id='canvas-inner-scroll' data-request='paintCanvas' data-hover='paintCanvas' class='fl fl-center fl-1' style='width: 1920px; height: 1920px;'>
-    <canvas                      
-      id='canvas-view'
-      width={APP.width}
-      height={APP.height}
-      style='width: 1920px; height: 1920px; transform: scale(.25); pointer-events: none;' />
+  return <div id='canvas-outer-scroll' class={`overflow fl-1 cursor-${APP.tool}`}>
+    <div id='canvas-inner-scroll' data-request='paintCanvas' data-hover='paintCanvas' class='fl fl-center fl-1' style='width: 1920px; height: 1920px;'>
+      <canvas                      
+        id='canvas-view'
+        width={APP.width}
+        height={APP.height}
+        style='width: 1920px; height: 1920px; transform: scale(.25); pointer-events: none;' />
+    </div>  
   </div>
 }

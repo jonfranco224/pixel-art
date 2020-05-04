@@ -8,7 +8,8 @@ export default {
 	input: 'app/index.js',
 	output: {
 		file: 'public/bundle.js',
-		format: 'iife'
+		format: 'iife',
+		sourcemap: true
 	},
 	external: [],
 	plugins: [
@@ -33,6 +34,6 @@ export default {
 		// 		properties: { regex: /^_/ }
 		// 	}
 		// }),
-		es3()
+		// es3()
 	]
 };

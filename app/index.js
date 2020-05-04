@@ -1,39 +1,13 @@
 import { h, render, Component } from 'preact'
-import { APP, VIEW, initCanvases, newData } from './data'
-import { undo, redo } from './undo-redo'
-import { setTool } from './canvas'
+import { APP, VIEW, ENV, initCanvases, newData } from './state'
 import { setupKeyListeners } from './keyboard'
 
 // Components
-import { Color } from './color'
-import { Timeline } from './timeline'
-import { Canvas, paintCanvas } from './canvas'
-
-const loadData = ({ onLoaded, onError }) => {
-  //console.time('startRead')
-  localforage.getItem('pixel-art-app').then((stored) => {
-    //console.timeEnd('startRead')
-    for (const key in stored) {
-      APP[key] = stored[key]
-    }
-
-    onLoaded()
-  }).catch(function(err) {
-    console.log(err)
-    onError()
-  });
-}
-
-const saveData = () => {
-  //console.time('startwrite')
-  localforage.setItem('pixel-art-app', APP).then(function(value) {
-    // This will output `1`.
-    //console.timeEnd('startwrite')
-  }).catch(function(err) {
-    // This code runs if there were any errors
-    console.log(err);
-  });
-}
+import { Color } from './components/color'
+import { Timeline } from './components/timeline'
+import { Canvas, paintCanvas } from './components/canvas'
+import { Header } from './components/header'
+import { Toolbar } from './components/toolbar'
 
 const downloadCanvas = (e) => {
   const c = document.createElement('canvas')
@@ -224,10 +198,6 @@ class View extends Component{
     VIEW.window.prevY = 0
     VIEW.window.currX = 0
     VIEW.window.currY = 0
-
-    setTimeout(() => {
-      saveData()
-    }, 50)
   }
 
   onGestureHover (e) {
@@ -256,91 +226,12 @@ class View extends Component{
         onMouseDown={(e) => { if (e.which === 1) this.onGestureDown(e); }}
         onMouseMove={(e) => { this.dragOrHover(e) }}
         onMouseUp={(e) => { this.onGestureEnd(e) }}>
-        <div class='h-40 bg-light bord-dark-b fl'>
-          <div class="fl w-full">
-            <div class="fl-1 fl">
-              <div class="fl bord-dark-r rel w-40"
-                onMouseLeave={() => {
-                  VIEW.file.open = false
-                  VIEW.render()
-                }}>
-                <button
-                  onClick={() => {
-                    VIEW.file.open = !VIEW.file.open
-                    VIEW.render()
-                  }}
-                  class="fl fl-center m-0 p-0 w-40">
-                  <img src="img/bars.svg" />
-                </button>
-                <div
-                  class="bg-light fl-column bord-dark abs z-5"
-                  style={`visibility: ${VIEW.file.open ? 'visible' : 'hidden'}; top: 10px; left: 10px;`}>
-                    <button
-                      onClick={() => {
-                        VIEW.newCanvas.open = true
-                        VIEW.file.open = false
-                        VIEW.render()
-                      }}
-                      class="m-0 p-h-15 h-40 fl fl-center-y">
-                      <img src={`img/new.svg`} />
-                      <small class="bold p-h-10" style='text-transform: capitalize;'>New</small>
-                    </button>
-                    <button
-                      onClick={() => {
-                        VIEW.downloadCanvas.open = true
-                        VIEW.file.open = false
-                        VIEW.render()
-                      }}
-                      class="m-0 p-h-15 h-40 fl fl-center-y">
-                      <img src={`img/download.svg`} />
-                      <small class="bold p-h-10" style='text-transform: capitalize;'>download</small>
-                    </button>
-                </div>
-              </div>
-              <div class='fl-1 fl fl-justify-center'>
-                <button
-                  onClick={() => { undo() }}
-                  class="fl fl-center m-0 p-0 w-40 bord-dark-l bord-dark-r">
-                  <img src="img/undo.svg" />
-                </button>
-                <button
-                  onClick={() => { redo() }}
-                  class="fl fl-center m-0 p-0 w-40 bord-dark-r">
-                  <img src="img/redo.svg" />
-                </button>
-              </div>
-            </div>
-            <div class="fl" style="max-width: 241px; min-width: 241px;">
-              
-            </div>
-          </div>
-        </div>
+        <Header />
         <div class='fl' style='height: calc(100% - 40px); '>
-          <div class='w-40 bg-light bord-dark-r'>
-            {
-              ['pencil', 'eraser', 'line', 'circle', 'square', 'fill', 'eye-dropper', 'move'].map(tool => 
-                <button
-                  onClick={() => { setTool(tool) }}
-                  class="fl fl-center m-0 p-0 w-40 h-40 bord-dark-r"
-                  style={`${APP.tool === tool ? 'background: rgba(52, 152, 219, 255);' : ''}`}>
-                  <img src={`img/${tool}.svg`} />
-                </button>
-              )
-            }
-          </div>
+          <Toolbar />
           <div class='fl-column' style='width: calc(100% - 281px);'>
-            <div
-              id='canvas-outer-scroll'
-              class={`overflow fl-1 cursor-${APP.tool}`}>
-              <Canvas />
-            </div>
+            <Canvas />
             <Timeline />
-            {/* <div class='fl-1 h-full fl'>
-              <div class='fl-1 fl-column h-full' style='width: calc(100% - 281px);'>
-                <Canvas />
-                <Timeline />
-              </div>
-            </div> */}
           </div>
           <div class='bg-light bord-dark-l fl-column' style="max-width: 241px; min-width: 241px;">
             <div class='bord-dark-b fl-column overflow'>
@@ -349,19 +240,21 @@ class View extends Component{
               </div>
               <div class='fl-1 overflow'>
                 <div class="fl fl-center p-10">
-                  <small class="bold" style="width: 150px;">Brush Size</small>
-                  <select
-                    onInput={(e) => {
-                      VIEW.brushSize = parseInt(e.target.value)
-                    }}
-                    value={VIEW.brushSize}
-                    class="w-full">
-                      {
-                        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((size, i) => {
-                          return <option value={i}>{size}</option>
-                        })
-                      }
-                  </select>
+                  <small style="width: 150px; font-size: 11px;">Brush Size</small>
+                  <div class='fl-1 select'>
+                    <select
+                      onInput={(e) => {
+                        VIEW.brushSize = parseInt(e.target.value)
+                      }}
+                      value={VIEW.brushSize}
+                      class="w-full">
+                        {
+                          [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((size, i) => {
+                            return <option value={i}>{size}</option>
+                          })
+                        }
+                    </select>
+                  </div>
                 </div>
               </div>
             </div>
@@ -437,34 +330,38 @@ class View extends Component{
               <div class="p-10 bg-light bord-dark-l bord-dark-r bord-dark-b" style='border-bottom-right-radius: 5px; border-bottom-left-radius: 5px;'>
                 <div class="m-5 p-v-5">
                   <div class="fl fl-center">
-                    <small class="bold" style="width: 150px;">Type</small>
-                    <select
-                      onInput={(e) => {
-                        VIEW.downloadCanvas.type = e.target.value
-                      }}
-                      value={VIEW.downloadCanvas.type}
-                      id="config-download-size" class="w-full">
-                        <option value="frame">Frame</option>
-                        <option value="spritesheet">Spritesheet</option>
-                    </select>
+                    <small class="bold" style="width: 100px;">Type</small>
+                    <div class='fl-1 select'>
+                      <select
+                        onInput={(e) => {
+                          VIEW.downloadCanvas.type = e.target.value
+                        }}
+                        value={VIEW.downloadCanvas.type}
+                        id="config-download-size" class="w-full">
+                          <option value="frame">Frame</option>
+                          <option value="spritesheet">Spritesheet</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
                 <div class="m-5 p-v-5">
                     <div class="fl fl-center">
-                      <small class="bold" style="width: 150px;">Size</small>
-                      <select
-                        onInput={(e) => {
-                          VIEW.downloadCanvas.size = parseInt(e.target.value)
-                        }}
-                        value={VIEW.downloadCanvas.size}
-                        id="config-download-size" class="w-full">
-                          <option value="2">2x</option>
-                          <option value="4">4x</option>
-                          <option value="8">8x</option>
-                          <option value="16">16x</option>
-                          <option value="32">32x</option>
-                          <option value="64">64x</option>
-                      </select>
+                      <small class="bold" style="width: 100px;">Size</small>
+                      <div class='fl-1 select'>
+                        <select
+                          onInput={(e) => {
+                            VIEW.downloadCanvas.size = parseInt(e.target.value)
+                          }}
+                          value={VIEW.downloadCanvas.size}
+                          id="config-download-size" class="w-full">
+                            <option value="2">2x</option>
+                            <option value="4">4x</option>
+                            <option value="8">8x</option>
+                            <option value="16">16x</option>
+                            <option value="32">32x</option>
+                            <option value="64">64x</option>
+                        </select>
+                      </div>
                     </div>
                 </div>
                 <div class="fl" style="padding-top: 5px;">
@@ -490,6 +387,32 @@ class View extends Component{
   }
 }
 
+const loadData = ({ onLoaded, onError }) => {
+  //console.time('startRead')
+  localforage.getItem('pixel-art-app').then((stored) => {
+    //console.timeEnd('startRead')
+    for (const key in stored) {
+      APP[key] = stored[key]
+    }
+
+    onLoaded()
+  }).catch(function(err) {
+    console.log(err)
+    onError()
+  });
+}
+
+const saveData = () => {
+  setTimeout(() => {
+    console.time('startwrite')
+    localforage.setItem('pixel-art-app', APP).then(function(value) {
+      console.timeEnd('startwrite')
+    }).catch(function(err) {
+      console.log(err);
+    });
+  }, 50)
+}
+
 const onProgramStart = () => {
   console.log('Program started.')
 
@@ -506,13 +429,14 @@ const onProgramStart = () => {
 
   setupKeyListeners()
   
-  window.addEventListener('keyup', () => {
-    saveData()
-  })  
+  window.addEventListener('keyup', saveData)
+  window.addEventListener('mouseup', saveData)
 }
 
 window.addEventListener('load', onProgramStart)
+if (ENV === 'PROD') {
+  window.addEventListener('beforeunload', (event) => {
+    event.returnValue = `Are you sure you want to leave?`;
+  });
+}
 
-window.addEventListener('beforeunload', (event) => {
-  event.returnValue = `Are you sure you want to leave?`;
-});

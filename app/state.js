@@ -1,5 +1,6 @@
 import { RGBtoHSL } from './utils'
 
+export const ENV = window.location.href.includes('localhost:4000') ? 'DEV' : 'PROD'
 export const APP = {}
 export const VIEW = { render: undefined }
 export const canvases = ['canvasSelection', 'canvasPreview', 'canvasTemp', 'canvasFinal', 'canvasView']
@@ -62,10 +63,10 @@ export const initCanvases = () => {
 }
 
 const initViewDefault = (preventOnMount) => {
-  VIEW.file = { open: false }
-  VIEW.color = { open: false }
-  VIEW.newCanvas = { open: false, w: 32, h: 32 }
-  VIEW.downloadCanvas = { open: false, size: 2, type: 'frame' }
+  VIEW.activeInput = {
+    id: '',
+    val: ''
+  }
 
   VIEW.window = {
     request: '',
@@ -77,6 +78,10 @@ const initViewDefault = (preventOnMount) => {
     currX: 0,
     currY: 0
   }
+
+  VIEW.file = { open: false }
+  VIEW.newCanvas = { open: false, w: 32, h: 32 }
+  VIEW.downloadCanvas = { open: false, size: 2, type: 'frame' }
 
   VIEW.brushSize = 0
 

@@ -1,5 +1,5 @@
 import { undo, redo } from './undo-redo'
-import { setTool } from './canvas'
+import { setTool } from './components/toolbar'
 
 const keyMap = {
   metaKey: {
@@ -36,6 +36,10 @@ let alphaKeyMark = Date.now()
 
 export const setupKeyListeners = () => {
   window.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT') {
+      return
+    }
+
     const key = e.key.toLowerCase()
     
     if (!e.repeat && key === 'meta') {

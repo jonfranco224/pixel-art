@@ -1,6 +1,6 @@
 import { h, render } from 'preact'
-import { APP, VIEW, canvases } from './data'
-import { addToUndo } from './undo-redo'
+import { APP, VIEW } from '../state'
+import { addToUndo } from '../undo-redo'
 
 const setTargetCanvas = (frame, layer) => {
   if (frame === undefined) console.error('setTargetCanvas - no frame given')

@@ -1,3 +1,7 @@
+:root {
+  --bg-dark: rgba(40, 40, 40, 1);;
+}
+
 * {
   box-sizing: border-box;
   touch-action: manipulation;
@@ -28,26 +32,6 @@ html, body {
   -ms-user-select: none;
   -o-user-select: none;
   user-select: none;
-}
-
-input, select {
-  height: 25px;
-}
-
-input[type='text'] {
-  display: inline-block;
-  min-width: 0;
-  background: rgb(40, 40, 40);
-  outline: none;
-  border: none;
-  color: white;
-  padding: 5px 10px;
-  border-radius: 2px;
-  border: 1px solid rgba(255, 255, 255, 0);
-}
-
-input[type='text']:focus, select:focus{
-  border: 1px solid rgba(255, 255, 255, .3);
 }
 
 body {
@@ -107,17 +91,56 @@ canvas, .frame-img {
   user-select: none;
 }
 
+input, select {
+  height: 25px;
+}
+
+input[type='text'], input[type='number'] {
+  display: inline-block;
+  min-width: 0;
+  background: rgb(40, 40, 40);
+  border: 1px solid rgb(35, 35, 35);
+  outline: none;
+  border-radius: 2px;
+  color: rgba(255, 255, 255, .9);
+  padding: 6px 5px 7px 10px;
+  height: 26px;
+}
+
+input[type='text']:focus,
+input[type='number']:focus,
+select:focus{
+  border: 1px solid rgba(255, 255, 255, .3);
+}
+
+.select {
+  display: flex;
+  align-items: center;
+  position: relative;
+  background: rgb(40, 40, 40);
+  border: 1px solid rgb(35, 35, 35);
+  border-radius: 2px;
+}
+
+.select:after {
+  position: absolute;
+  transform: rotate(180deg);
+  color: rgba(255, 255, 255, .9);
+  right: 8px;
+  top: 6px;
+  content: '\25B4';
+  pointer-events: none;
+}
+
 select, select:focus {
-  background: rgba(50, 50, 50, 1);
-  /* background: rgb(33, 33, 33); */
-  color: white;
-  border: 1px solid rgb(33, 33, 33);
-  border-top-left-radius: 2px;
-  border-top-right-radius: 2px;
-  border-bottom-right-radius: 2px;
-  border-bottom-left-radius: 2px;
+  -webkit-appearance: none;
+  appearance: none;
   cursor: pointer;
   outline: none;
+  border: 0;
+  background: transparent;
+  padding: 5px 20px 5px 10px;
+  color: rgba(255, 255, 255, .9);
 }
 
 ::-webkit-scrollbar {
@@ -136,7 +159,7 @@ select, select:focus {
 .bg-xlight { background: rgba(100, 100, 100,  1); }
 .bg-light { background: rgba(61,61,61, 1); }
 .bg-mid { background: rgba(50, 50, 50, 1); }
-.bg-dark { background: rgba(40, 40, 40, 1); }
+.bg-dark { background: var(--bg-dark); }
 .bg-transparent { background: transparent; }
 .bg-white { background: rgba(255, 255, 255, .8); }
 .bg-blue { background: rgb(52, 152, 219); }
@@ -166,6 +189,7 @@ select, select:focus {
 .fl-center { justify-content: center; align-items: center;}
 .fl-center-x { justify-content: center;}
 .fl-center-y { align-items: center;}
+.fl-justify-around { justify-content: space-around; }
 .fl-justify-between { justify-content: space-between; }
 .fl-justify-center { justify-content: center; }
 .fl-justify-end { justify-content: flex-end; }
@@ -193,7 +217,7 @@ select, select:focus {
 .w-10 { width: 10px; }
 
 .p-h-5 { padding-left: 5px; padding-right: 5px; }
-.p-h-10 { padding-left: 10px; padding-right: 10px; }
+.p-h-10 {padding-left: 10px;padding-right: 10px;}
 .p-h-15 { padding-left: 15px; padding-right: 15px; }
 .p-v-5 { padding-top: 5px; padding-bottom: 5px; }
 .p-v-10 { padding-top: 10px; padding-bottom: 10px; }
@@ -247,9 +271,9 @@ input[type='range']:focus {
 
 input[type='range']::-webkit-slider-thumb {
   -webkit-appearance: none;
-  border: 2px solid rgba(61, 61, 61, 1);
-  height: 13px;
-  width: 13px;
+  border: 1px solid rgba(35, 35, 35, 1);
+  height: 12px;
+  width: 12px;
   border-radius: 100%;
   background: #ffffff;
   cursor: pointer;
@@ -258,9 +282,9 @@ input[type='range']::-webkit-slider-thumb {
 
 /* All the same stuff for Firefox */
 input[type='range']::-moz-range-thumb {
-  border: 2px solid rgba(61, 61, 61, 1);
-  height: 15px;
-  width: 15px;
+  border: 1px solid rgba(35, 35, 35, 1);
+  height: 12px;
+  width: 12px;
   border-radius: 100%;
   background: #ffffff;
   cursor: pointer;
@@ -305,7 +329,7 @@ input[type='range']::-moz-range-thumb {
 
 .cursor-eye-dropper {
   cursor: crosshair;
-  cursor: url('./img/eye-dropper.svg') -8 6, auto;
+  /* cursor: url('./img/eye-dropper.svg') -8 6, auto; */
 }
 
 .cursor-fill {

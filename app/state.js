@@ -60,6 +60,9 @@ export const initCanvases = () => {
     VIEW[canvas].ctx = VIEW[canvas].dom.getContext('2d')
     VIEW[canvas].imgData = VIEW[canvas].ctx.getImageData(0, 0, APP.width, APP.height)
   })
+
+  VIEW.canvasTimeline = document.querySelector('#timeline-canvas')
+  VIEW.canvasTimelineTemp = document.createElement('canvas')
 }
 
 const initViewDefault = (preventOnMount) => {
@@ -92,6 +95,9 @@ const initViewDefault = (preventOnMount) => {
   VIEW.undo = []
   VIEW.undoPos = -1
   VIEW.currUndoRef = {}
+  
+  VIEW.canvasTimeline = undefined
+  VIEW.canvasTimelineTemp = undefined
 
   // need to reset these on new project
   canvases.forEach(canvas => {

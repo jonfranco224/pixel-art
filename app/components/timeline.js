@@ -6,10 +6,12 @@ const setTargetCanvas = (frame, layer) => {
   if (frame === undefined) console.error('setTargetCanvas - no frame given')
   if (layer === undefined) console.error('setTargetCanvas - no layer given')
 
-  APP.frameActive = frame
-  APP.layerActive = layer
+  if (frame >= 0 && frame < APP.frameCount && layer >= 0 && layer <= APP.layerCount) {
+    APP.frameActive = frame
+    APP.layerActive = layer
 
-  VIEW.render()
+    VIEW.render()
+  }
 }
 
 const seq = (request, type, data) => {
@@ -352,33 +354,12 @@ export const Timeline= () => {
             </div>
           </div>
           <div id='frames' class='fl-1 overflow hide-scroll' style='padding-bottom: 30px;'>
-            <div class='fl-col-reverse'>
-              {
-                APP.layers.map((layer, li) => {
-                  return <div
-                    class='fl'>
-                    {
-                      layer.frames.map((canvas, fi) => {
-                        return <button
-                          onClick={() => { setTargetCanvas(fi, li) }}
-                          class='w-30 h-30 fl fl-center bord-dark-r bord-dark-b bg-light rel'
-                          style={`
-                            background: ${
-                              APP.frameActive === fi && APP.layerActive === li
-                                ? 'rgba(52, 152, 219, 255)'
-                                : (APP.frameActive === fi || APP.layerActive === li)
-                                  ? 'rgba(100, 100, 100, 255)'
-                                  : 'rgba(0, 0, 0, 0)'
-                            };`}>
-                          <div class='abs bottom right p-5' ><small style='font-size: 8px;'><b>{fi + 1}</b></small></div>
-                          {/* <div class='bg-white' style='border-radius: 100%; width: 8px; height: 8px;' /> */}
-                        </button>
-                      })
-                    }
-                  </div>
-                })
-              }
-            </div>
+            <canvas id='timeline-canvas' style='cursor: pointer;' onClick={(e) => {
+              const x = Math.floor(e.offsetX / 30)
+              const y = (APP.layerCount - 1) - Math.floor(e.offsetY / 30)
+              
+              setTargetCanvas(x, y)
+            }}/>
           </div>
         </div>
       </div>

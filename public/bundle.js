@@ -74,6 +74,7 @@ var HSLtoRGB = function (hsl) {
   return [ r, g, b, 255 ]
 };
 
+var ENV = window.location.href.includes('localhost:4000') ? 'DEV' : 'PROD';
 var APP = {};
 var VIEW = { render: undefined };
 var canvases = ['canvasSelection', 'canvasPreview', 'canvasTemp', 'canvasFinal', 'canvasView'];
@@ -133,13 +134,16 @@ var initCanvases = function () {
     VIEW[canvas].ctx = VIEW[canvas].dom.getContext('2d');
     VIEW[canvas].imgData = VIEW[canvas].ctx.getImageData(0, 0, APP.width, APP.height);
   });
+
+  VIEW.canvasTimeline = document.querySelector('#timeline-canvas');
+  VIEW.canvasTimelineTemp = document.createElement('canvas');
 };
 
 var initViewDefault = function (preventOnMount) {
-  VIEW.file = { open: false };
-  VIEW.color = { open: false };
-  VIEW.newCanvas = { open: false, w: 32, h: 32 };
-  VIEW.downloadCanvas = { open: false, size: 2, type: 'frame' };
+  VIEW.activeInput = {
+    id: '',
+    val: ''
+  };
 
   VIEW.window = {
     request: '',
@@ -152,6 +156,10 @@ var initViewDefault = function (preventOnMount) {
     currY: 0
   };
 
+  VIEW.file = { open: false };
+  VIEW.newCanvas = { open: false, w: 32, h: 32 };
+  VIEW.downloadCanvas = { open: false, size: 2, type: 'frame' };
+
   VIEW.brushSize = 0;
 
   VIEW.timerID = undefined;
@@ -161,6 +169,9 @@ var initViewDefault = function (preventOnMount) {
   VIEW.undo = [];
   VIEW.undoPos = -1;
   VIEW.currUndoRef = {};
+  
+  VIEW.canvasTimeline = undefined;
+  VIEW.canvasTimelineTemp = undefined;
 
   // need to reset these on new project
   canvases.forEach(function (canvas) {
@@ -217,519 +228,18 @@ var redo = function () {
   VIEW.render();
 };
 
-// Colors
-var colorSetHSL = function (hsl) {
-  APP.color.hsl = hsl;
-  APP.color.rgb = HSLtoRGB(hsl);
-
-  VIEW.render();
-};
-
-var colorSetRGB = function (rgb) {
-  APP.color.rgb = rgb;
-  APP.color.hsl = RGBtoHSL(rgb);
-
-  VIEW.render();
-};
-
-var paletteAdd = function () {
-  APP.palette.push(APP.color.rgb);
-  
-  VIEW.render();
-};
-
-var paletteDelete = function (i) {
-  var index = APP.palette.indexOf(APP.color.rgb);
-
-  if (index !== -1) {
-    APP.palette.splice(index, 1);
-    VIEW.render();
-  } 
-};
-
-var Color = function () {
-  return (
-    h( 'div', null,
-      h( 'div', { class: 'h-30 bg-mid bord-dark-b fl fl-center-y p-h-10' },
-        h( 'small', null, h( 'b', null, "Color" ) )
-      ),
-      h( 'div', { class: 'fl fl-justify-between' },
-        h( 'div', { class: 'fl-1 fl fl-center-y p-h-10 bord-dark-b h-30 bord-dark-b' },
-          h( 'div', {
-            class: 'no-ptr h-30', style: ("min-height: 18px; width: 18px; border-radius: 100%; background: rgba(" + (APP.color.rgb[0]) + ", " + (APP.color.rgb[1]) + ", " + (APP.color.rgb[2]) + ", 255);") })
-        ),
-        h( 'div', { class: 'fl bord-dark-b h-30' },
-          APP.palette.filter(function (c) { return APP.color.rgb[0] === c[0] &&
-            APP.color.rgb[1] === c[1] &&
-            APP.color.rgb[2] === c[2] &&
-            APP.color.rgb[3] === c[3]; })
-            .length === 0 &&
-              h( 'button', {
-                onClick: function () { paletteAdd(); }, class: 'w-30 fl fl-center rel bord-dark-l' },
-                h( 'img', { src: "img/insert.svg" })
-              ),
-          APP.palette.filter(function (c) { return APP.color.rgb[0] === c[0] &&
-            APP.color.rgb[1] === c[1] &&
-            APP.color.rgb[2] === c[2] &&
-            APP.color.rgb[3] === c[3]; })
-            .length !== 0 &&
-            h( 'button', {
-              onClick: function () { paletteDelete(); }, class: 'w-30 fl fl-center bord-dark-l' },
-              h( 'img', { src: "img/delete.svg" })
-            )
-        )
-          
-      ),
-      h( 'div', {
-        onInput: function (e) {
-          var hsl = [APP.color.hsl[0], APP.color.hsl[1], APP.color.hsl[2], APP.color.hsl[3]];
-          hsl[parseInt(e.target.dataset.index)] = parseInt(e.target.value);
-          
-          colorSetHSL(hsl);
-        }, class: 'bg-light fl-column p-10 b-r-2 overflow-none' },
-        h( 'div', { class: 'b-r-2 overflow-none' },
-          h( 'div', { class: 'fl-column' },
-            h( 'form', { class: 'fl-column', autocomplete: 'off' },
-              h( 'input', {
-                id: 'hsl', 'data-index': '0', type: 'range', class: 'w-full m-0', style: 'height: 25px; background: linear-gradient(to right, #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%);', min: '0', max: '359', value: APP.color.hsl[0] })
-            )
-          ),
-          h( 'div', { class: 'fl-column' },
-            h( 'form', { class: 'fl-column', autocomplete: 'off' },
-              h( 'input', {
-                value: APP.color.hsl[1], 'data-index': '1', type: 'range', class: 'w-full m-0', style: ("height: 25px; background: linear-gradient(to right, hsl(" + (APP.color.hsl[0]) + ", 0%, 50%) 0%,hsl(" + (APP.color.hsl[0]) + ", 100%, 50%) 100%);") })
-            )
-          ),
-          h( 'div', { class: 'fl-column' },
-            h( 'form', { class: 'fl-column', autocomplete: 'off' },
-              h( 'input', {
-                value: APP.color.hsl[2], 'data-index': '2', type: 'range', class: 'w-full m-0', style: ("height: 25px; background: linear-gradient(to right, hsl(" + (APP.color.hsl[0]) + ", 100%, 0%) 0%, hsl(" + (APP.color.hsl[0]) + ", 100%, 50%) 50%, hsl(" + (APP.color.hsl[0]) + ", 100%, 100%) 100%)") })
-            )
-        )
-        )
-      ),
-      h( 'div', { class: 'p-h-10 bord-dark-b', style: 'padding-bottom: 10px;' },
-        h( 'div', { class: 'fl fl-wrap b-r-2 overflow-none', style: 'align-content: baseline;' },
-          APP.palette.map(function (c) { return h( 'button', {
-                onClick: function () {
-                  colorSetRGB(c);
-                }, class: 'm-0', style: ("\n                  width: 44px;\n                  min-height: 25px;\n                  background: rgba(" + (c[0]) + ", " + (c[1]) + ", " + (c[2]) + ", " + (c[3]) + ");\n                  border: " + (APP.color.rgb[0] === c[0] &&
-                    APP.color.rgb[1] === c[1] &&
-                    APP.color.rgb[2] === c[2] &&
-                    APP.color.rgb[3] === c[3] ? '2px solid rgba(61,61,61, 1)' : '2px solid rgba(61,61,61, 0)') + ";\n                  box-shadow: inset 0px 0px 0px 1px rgba(255, 255, 255, " + (APP.color.rgb[0] === c[0] &&
-                    APP.color.rgb[1] === c[1] &&
-                    APP.color.rgb[2] === c[2] &&
-                    APP.color.rgb[3] === c[3] ? '255' : '0') + ");\n                ") }); }
-            )
-        )
-      )
-    )
-  )
-};
-
 var setTool = function (tool) {
   APP.tool = tool;
   VIEW.render();
 };
 
-var getPoint = function (imgDataArr, x, y, w, h) {
-  if (!imgDataArr) { throw Error(("setPoint: " + imgDataArr + " undefined")) }
-  if (!imgDataArr.length) { throw Error(("setPoint: " + imgDataArr + " not a valid array")) }
-
-  if (x >= 0 && x < w && y >= 0 && y < h) { // check bounds
-    var i = (x + w * y) * 4;
-    return [
-      imgDataArr[i + 0],
-      imgDataArr[i + 1],
-      imgDataArr[i + 2],
-      imgDataArr[i + 3]
-    ]
-  }
-
-  return [0, 0, 0, 0]
-};
-
-var setPoint = function (imgDataArr, x, y, w, h, color) {
-  if (!imgDataArr) { throw Error(("setPoint: " + imgDataArr + " undefined")) }
-  if (!imgDataArr.length) { throw Error(("setPoint: " + imgDataArr + " not a valid array")) }
-  
-  if (x >= 0 && x < w && y >= 0 && y < h) { // check bounds
-    var i = (x + w * y) * 4;
-    imgDataArr[i + 0] = color[0];
-    imgDataArr[i + 1] = color[1];
-    imgDataArr[i + 2] = color[2];
-    imgDataArr[i + 3] = color[3];
-  }
-};
-
-var areRGBAsEqual = function (c1, a, c2, b) {
-  return (
-    c1[a + 0] === c2[b + 0] &&
-    c1[a + 1] === c2[b + 1] &&
-    c1[a + 2] === c2[b + 2] &&
-    c1[a + 3] === c2[b + 3]
-  )
-};
-
-var getColorAtPixel = function (data, x, y, w) {
-  var linearCord = (y * w + x) * 4;
-
-  return [
-    data[linearCord + 0],
-    data[linearCord + 1],
-    data[linearCord + 2],
-    data[linearCord + 3]
-  ]
-};
-
-var fill = function (canvasImgData, startX, startY, w, h, color) { // http://www.williammalone.com/articles/html5-canvas-javascript-paint-bucket-tool/
-  var linear_cords = (startY * w + startX) * 4;
-
-  var pixel_stack = [{ x: startX, y: startY }];
-  var original_color = getColorAtPixel(canvasImgData, startX, startY, w);
-
-  if (areRGBAsEqual(color, 0, original_color, 0)) {
-    return
-  }
-
-  while (pixel_stack.length > 0) {
-    var new_pixel = pixel_stack.shift();
-    var x = new_pixel.x;
-    var y = new_pixel.y;
-
-    linear_cords = (y * w + x) * 4;
-
-    while (
-      y-- >= 0 &&
-      canvasImgData[linear_cords + 0] === original_color[0] &&
-      canvasImgData[linear_cords + 1] === original_color[1] &&
-      canvasImgData[linear_cords + 2] === original_color[2] &&
-      canvasImgData[linear_cords + 3] === original_color[3]) {
-        linear_cords -= w * 4;
-    }
-
-    linear_cords += w * 4;
-    y++;
-
-    var reached_left = false;
-    var reached_right = false;
-
-    while (
-      y++ < h &&
-      canvasImgData[linear_cords + 0] === original_color[0] &&
-      canvasImgData[linear_cords + 1] === original_color[1] &&
-      canvasImgData[linear_cords + 2] === original_color[2] &&
-      canvasImgData[linear_cords + 3] === original_color[3]
-    ) {
-      canvasImgData[linear_cords + 0] = color[0];
-      canvasImgData[linear_cords + 1] = color[1];
-      canvasImgData[linear_cords + 2] = color[2];
-      canvasImgData[linear_cords + 3] = color[3];
-
-      if (x > 0) {
-        if (
-          canvasImgData[linear_cords - 4 + 0] === original_color[0] &&
-          canvasImgData[linear_cords - 4 + 1] === original_color[1] &&
-          canvasImgData[linear_cords - 4 + 2] === original_color[2] &&
-          canvasImgData[linear_cords - 4 + 3] === original_color[3]
-        ) {
-          if (!reached_left) {
-            pixel_stack.push({ x: x - 1, y: y });
-            reached_left = true;
-          }
-        } else if (reached_left) {
-          reached_left = false;
-        }
-      }
-  
-      if (x < w - 1) {
-        if (
-          canvasImgData[linear_cords + 4 + 0] === original_color[0] &&
-          canvasImgData[linear_cords + 4 + 1] === original_color[1] &&
-          canvasImgData[linear_cords + 4 + 2] === original_color[2] &&
-          canvasImgData[linear_cords + 4 + 3] === original_color[3]
-        ) {
-          if (!reached_right) {
-            pixel_stack.push({ x: x + 1, y: y });
-            reached_right = true;
-          }
-        } else if (reached_right) {
-          reached_right = false;
-        }
-      }
-      
-      linear_cords += w * 4;
-    }
-  }
-};
-
-var line = function (startX, startY, endX, endY, func) {
-  var dx = Math.abs(endX - startX);
-  var dy = Math.abs(endY - startY);
-
-  var xDir = endX - startX >= 0 ? 1 : -1;
-  var yDir = endY - startY >= 0 ? 1 : -1;
-  
-  var lineX = startX;
-  var lineY = startY;
-
-  var step = dx >= dy ? dx : dy;
-
-  dx = dx / step;
-  dy = dy / step;
-  
-  var i = 0;
-  while (i < step) {
-    func(Math.floor(lineX), Math.floor(lineY));
-
-    lineX += (dx * xDir);
-    lineY += (dy * yDir);
-    i += 1;
-  }
-
-  func(Math.floor(lineX), Math.floor(lineY));
-};
-
-var circle = function (xCenter, yCenter, currX, currY, func) {
-  var radius = Math.floor(Math.sqrt(Math.pow((currX - xCenter), 2) + Math.pow((currY - yCenter), 2)));
-
-  if (radius <= 0) { return }
-
-  var x = 0;
-  var y = radius;
-  var p = 1 - radius;
-
-  var circlePlot = function () {
-    func(xCenter + x, yCenter + y);
-    func(xCenter + y, yCenter + x);
-    func(xCenter - x, yCenter + y);
-    func(xCenter - y, yCenter + x);
-    func(xCenter + x, yCenter - y);
-    func(xCenter + y, yCenter - x);
-    func(xCenter - x, yCenter - y);
-    func(xCenter - y, yCenter - x);
-  };
-
-  // Plot first set of points
-  circlePlot();
-
-  while (x <= y) {
-    x++;
-    if (p < 0) {
-      p += 2 * x + 1; // Mid point is inside therefore y remains same
-    } else { // Mid point is outside the circle so y decreases
-      y--;
-      p += 2 * (x - y) + 1;
-    }
-
-    circlePlot();
-  }
-};
-
-function squareFilled (startX, startY, endX, endY, w, h, color, func) {
-  var points = [];
-
-  var dx = Math.abs(endX - startX);
-  var dy = Math.abs(endY - startY);
-
-  var xDir = endX - startX >= 0 ? 1 : -1;
-  var yDir = endY - startY >= 0 ? 1 : -1;
-
-  var lineX = startX;
-  var lineY = startY;
-
-  var xStep = 0;
-  var yStep = 0;
-
-  while (xStep <= dx) {
-    yStep = 0;
-    lineY = startY;
-
-    while (yStep <= dy) {
-      func(lineX, lineY);
-      //points.push({ x: lineX, y: lineY })
-
-      lineY += (1 * yDir);
-      yStep += 1;
-    }
-
-    lineX += (1 * xDir);
-    xStep += 1;
-  }
-
-  return points
-}
-
-var square = function (startX, startY, endX, endY, func) {
-  var dx = Math.abs(endX - startX);
-  var dy = Math.abs(endY - startY);
-
-  var xDir = endX - startX >= 0 ? 1 : -1;
-  var yDir = endY - startY >= 0 ? 1 : -1;
-
-  var lineX = startX;
-  var lineY = startY;
-  var i = 0;
-
-  func(lineX, lineY);
-
-  while (i < dx) {
-    lineX += (1 * xDir);
-    func(lineX, startY);
-    func(lineX, (startY + (dy * yDir)));
-    i += 1;
-  }
-
-  i = 0;
-
-  while (i < dy) {
-    lineY += (1 * yDir);
-    func(startX, lineY);
-    func((startX + (dx * xDir)), lineY);
-    i += 1;
-  }
-};
-
-var paintCanvas = function (gestureEvent) {
-  // Reset
-  VIEW.canvasPreview.ctx.clearRect(0, 0, APP.width, APP.height);
-  VIEW.canvasPreview.imgData = VIEW.canvasPreview.ctx.getImageData(0, 0, APP.width, APP.height);
-
-  // Whole or Selection
-  var target = APP.layers[APP.layerActive].frames[APP.frameActive].data; // or selection buffer
-  var preview = VIEW.canvasPreview.imgData.data;
-
-  // Translate coordinates based on current screen position and canvas scale
-  var bb = VIEW.canvasView.dom.getBoundingClientRect();
-
-  var scaleX = bb.width / VIEW.canvasView.dom.width;
-  var scaleY = bb.height / VIEW.canvasView.dom.height;
-
-  var startX = Math.floor((VIEW.window.startX - bb.x) / scaleX);
-  var startY = Math.floor((VIEW.window.startY - bb.y) / scaleY);
-  var prevX = Math.floor((VIEW.window.prevX - bb.x) / scaleX);
-  var prevY = Math.floor((VIEW.window.prevY - bb.y) / scaleY);
-  var currX = Math.floor((VIEW.window.currX - bb.x) / scaleX);
-  var currY = Math.floor((VIEW.window.currY - bb.y) / scaleY);
-
-  var setBrushPoints = function (canvas, x, y, w, h, color) {
-    squareFilled(x - VIEW.brushSize, y - VIEW.brushSize, x + VIEW.brushSize, y + VIEW.brushSize, w, h, color, function (x, y) {
-      setPoint(canvas, x, y, w, h, color);
-    });
-  };
-
-  if (gestureEvent === 'hover' && APP.tool !== 'eye-dropper' && APP.tool !== 'move') {
-    setBrushPoints(preview, currX, currY, APP.width, APP.height, APP.tool !== 'eraser' ? APP.color.rgb : [0, 0, 0, 50]);
-    VIEW.render();
-
-    return
-  }
-
-  // Setup Undo
-  if (gestureEvent === 'start' && APP.tool !== 'eye-dropper') {
-    var copy = new ImageData(APP.width, APP.height);
-    copy.data.set(APP.layers[APP.layerActive].frames[APP.frameActive].data);
-    var layerActive = APP.layerActive;
-    var frameActive = APP.frameActive;
-    
-    addToUndo(APP.tool);
-
-    VIEW.currUndoRef.undo = function () {
-      APP.frameActive = frameActive;
-      APP.layerActive = layerActive;
-      APP.layers[layerActive].frames[frameActive].data.set(copy.data);
-    };
-  }
-  
-  // Eye dropper
-  if (gestureEvent === 'end' && APP.tool === 'eye-dropper') {
-    var color = getPoint(target, currX, currY, APP.width, APP.height);
-    
-    if (color[3] !== 0) {
-      colorSetRGB(color);
-    }
-  }
-
-  // Fill
-  if (gestureEvent === 'end' && APP.tool === 'fill') {
-    fill(target, currX, currY, APP.width, APP.height, APP.color.rgb);
-  }
-
-  // Points
-  if (APP.tool === 'pencil' || APP.tool === 'eraser') {
-    if (APP.tool === 'eraser') {
-      setBrushPoints(preview, currX, currY, APP.width, APP.height, [0, 0, 0, 50]);
-    }
-    
-    line(prevX, prevY, currX, currY, function (x, y) {
-      setBrushPoints(target, x, y, APP.width, APP.height, APP.tool === 'pencil' ? APP.color.rgb : [0, 0, 0, 0]);
-    });
-  }
-
-  // Geometry
-  if (APP.tool === 'line' || APP.tool === 'circle' || APP.tool === 'square') {
-    var funcs = { 'line': line, 'circle': circle, 'square': square };
-    
-    funcs[APP.tool](startX, startY, currX, currY, function (x, y) {
-      setBrushPoints(gestureEvent === 'start' || gestureEvent === 'resume' ? preview : target, x, y, APP.width, APP.height, APP.color.rgb);
-    });
-  }
-
-  // Move
-  if (APP.tool === 'move') {
-    if (gestureEvent === 'start') {
-      // Frame to Selection
-      VIEW.canvasSelection.ctx.putImageData(APP.layers[APP.layerActive].frames[APP.frameActive], 0, 0);
-      VIEW.canvasSelection.imgData = VIEW.canvasSelection.ctx.getImageData(0, 0, APP.width, APP.height);
-
-      // Selection to Preview
-      VIEW.canvasPreview.ctx.putImageData(VIEW.canvasSelection.imgData, 0, 0);
-      VIEW.canvasPreview.imgData = VIEW.canvasPreview.ctx.getImageData(0, 0, APP.width, APP.height);
-
-      // Clear main canvas
-      APP.layers[APP.layerActive].frames[APP.frameActive] = new ImageData(APP.width, APP.height);
-    }
-
-    if (gestureEvent === 'resume') {
-      // Selection to Preview
-      VIEW.canvasPreview.ctx.putImageData(VIEW.canvasSelection.imgData, prevX - startX, prevY - startY);
-      VIEW.canvasPreview.imgData = VIEW.canvasPreview.ctx.getImageData(0, 0, APP.width, APP.height);
-    }
-
-    if (gestureEvent === 'end') {
-      // Selection to Preview
-      VIEW.canvasPreview.ctx.putImageData(VIEW.canvasSelection.imgData, prevX - startX, prevY - startY);
-      VIEW.canvasPreview.imgData = VIEW.canvasPreview.ctx.getImageData(0, 0, APP.width, APP.height);
-
-      // Preview to Main
-      APP.layers[APP.layerActive].frames[APP.frameActive] = VIEW.canvasPreview.ctx.getImageData(0, 0, APP.width, APP.height);
-
-      VIEW.canvasPreview.ctx.clearRect(0, 0, APP.width, APP.height);
-      VIEW.canvasPreview.imgData = VIEW.canvasPreview.ctx.getImageData(0, 0, APP.width, APP.height);
-    }
-  }
-
-  // Setup Redo
-  if (gestureEvent === 'end' && APP.tool !== 'eye-dropper') {
-    var copy$1 = new ImageData(APP.width, APP.height);
-    copy$1.data.set(APP.layers[APP.layerActive].frames[APP.frameActive].data);
-    var layerActive$1 = APP.layerActive;
-    var frameActive$1 = APP.frameActive;
-
-    VIEW.currUndoRef.redo = function () {
-      APP.frameActive = frameActive$1;
-      APP.layerActive = layerActive$1;
-      APP.layers[layerActive$1].frames[frameActive$1].data.set(copy$1.data);
-    };
-  }
-
-  VIEW.render();
-};
-
-var Canvas = function () {
-  return h( 'div', { id: 'canvas-inner-scroll', 'data-request': 'paintCanvas', 'data-hover': 'paintCanvas', class: 'fl fl-center fl-1', style: 'width: 1920px; height: 1920px;' },
-    h( 'canvas', {                      
-      id: 'canvas-view', width: APP.width, height: APP.height, style: 'width: 1920px; height: 1920px; transform: scale(.25); pointer-events: none;' })
+var Toolbar = function () {
+  return h( 'div', { class: 'w-40 bg-light bord-dark-r' },
+    ['pencil', 'eraser', 'line', 'circle', 'square', 'fill', 'eye-dropper', 'move'].map(function (tool) { return h( 'button', {
+          onClick: function () { setTool(tool); }, class: "fl fl-center m-0 p-0 w-40 h-40 bord-dark-r", style: ("" + (APP.tool === tool ? 'background: rgba(52, 152, 219, 255);' : '')) },
+          h( 'img', { src: ("img/" + tool + ".svg") })
+        ); }
+      )
   )
 };
 
@@ -768,6 +278,10 @@ var alphaKeyMark = Date.now();
 
 var setupKeyListeners = function () {
   window.addEventListener('keydown', function (e) {
+    if (e.target.tagName === 'INPUT') {
+      return
+    }
+
     var key = e.key.toLowerCase();
     
     if (!e.repeat && key === 'meta') {
@@ -802,14 +316,255 @@ var setupKeyListeners = function () {
   });
 };
 
+var enableActiveInput = function (id, val) {
+  VIEW.activeInput.id = id;
+  VIEW.activeInput.val = val;
+  
+  VIEW.render();
+};
+
+var disableActiveInput = function () {
+  VIEW.activeInput.id = '';
+  VIEW.activeInput.val = '';
+  
+  VIEW.render();
+};
+
+var setActiveInput = function (val) {
+  VIEW.activeInput.val = val;
+};
+
+var setRGB = function (newRGB) {
+  var rgb = newRGB;
+  var hsl = RGBtoHSL(rgb);
+
+  APP.color.rgb = rgb;
+  APP.color.hsl = hsl;
+
+  VIEW.render();
+};
+
+var setHSL = function (newHSL) {
+  var hsl = newHSL;
+  var rgb = HSLtoRGB(hsl);
+
+  APP.color.hsl = hsl;
+  APP.color.rgb = rgb;
+  
+  VIEW.render();
+};
+
+var setRed = function (e) {
+  var r = parseInt(e.target.value);
+
+  if (r >= 0 && r <= 255) {
+    var newRGB = [r, APP.color.rgb[1], APP.color.rgb[2], APP.color.rgb[3]];
+    setRGB(newRGB);
+  }
+};
+
+var setGreen = function (e) {
+  var g = parseInt(e.target.value);
+
+  if (g >= 0 && g <= 255) {
+    var newRGB = [APP.color.rgb[0], g, APP.color.rgb[2], APP.color.rgb[3]];
+    setRGB(newRGB);
+  }
+};
+
+var setBlue = function (e) {
+  var b = parseInt(e.target.value);
+
+  if (b >= 0 && b <= 255) {
+    var newRGB = [APP.color.rgb[0], APP.color.rgb[1], b, APP.color.rgb[3]];
+    setRGB(newRGB);
+  }
+};
+
+var setHue = function (e) {
+  var h = parseInt(e.target.value);
+  
+  if (h >= 0 && h <= 360) {
+    var newHSL = [h, APP.color.hsl[1], APP.color.hsl[2], APP.color.hsl[3]];
+    setHSL(newHSL);
+  }
+};
+
+var setSaturation = function (e) {
+  var s = parseInt(e.target.value);
+  
+  if (s >= 0 && s <= 100) {
+    var newHSL = [APP.color.hsl[0], s, APP.color.hsl[2], APP.color.hsl[3]];
+    setHSL(newHSL);
+  }
+};
+
+var setLightness = function (e) {
+  var l = parseInt(e.target.value);
+  
+  if (l >= 0 && l <= 100) {
+    var newHSL = [APP.color.hsl[0], APP.color.hsl[1], l, APP.color.hsl[3]];
+    setHSL(newHSL);
+  }
+};
+
+var paletteAdd = function () {
+  APP.palette.push(APP.color.rgb);
+  
+  VIEW.render();
+};
+
+var paletteDelete = function (i) {
+  var index = APP.palette.indexOf(APP.color.rgb);
+
+  if (index !== -1) {
+    APP.palette.splice(index, 1);
+    VIEW.render();
+  } 
+};
+
+var Color = function () {
+  return (
+    h( 'div', { class: 'bord-dark-b fl-1' },
+      h( 'div', { class: 'h-30 bg-mid bord-dark-b fl fl-center-y p-h-10' },
+        h( 'small', null, h( 'b', null, "Color" ) )
+      ),
+      h( 'div', { class: 'fl-column overflow-none p-10' },
+        h( 'div', { class: 'b-r-2 overflow-none fl-column' },
+          [
+              {
+                id: 'color-hue-range',
+                min: 0,
+                max: 360,
+                func: setHue,
+                style: "min-height: 26px; background: linear-gradient(to right, #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%);"
+              }, {
+                id: 'color-saturation-range',
+                min: 0,
+                max: 100,
+                func: setSaturation,
+                style: ("min-height: 26px; background: linear-gradient(to right, hsl(" + (APP.color.hsl[0]) + ", 0%, 50%) 0%,hsl(" + (APP.color.hsl[0]) + ", 100%, 50%) 100%);")
+              }, {
+                id: 'color-lightness-range',
+                min: 0,
+                max: 100,
+                func: setLightness,
+                style: ("min-height: 26px; background: linear-gradient(to right, hsl(" + (APP.color.hsl[0]) + ", 100%, 0%) 0%, hsl(" + (APP.color.hsl[0]) + ", 100%, 50%) 50%, hsl(" + (APP.color.hsl[0]) + ", 100%, 100%) 100%)")
+              }
+            ].map(function (item, i) {
+              return h( 'input', {
+                type: 'range', min: item.min, max: item.max, style: item.style, class: 'fl-1 m-0', onFocus: function (e) {
+                  enableActiveInput(item.id, APP.color.hsl[i]);
+                }, onFocusOut: function () {
+                  disableActiveInput();
+                }, onInput: function (e) {
+                  setActiveInput(e.target.value);
+                  item.func(e);
+                }, value: VIEW.activeInput.id === item.id ? VIEW.activeInput.val : APP.color.hsl[i] })
+            })
+        ),
+        h( 'div', { class: 'p-v-10' },
+          h( 'div', { class: 'fl fl-center-y', style: 'margin-bottom: 2px;' },
+            h( 'small', { style: 'width: 50px; font-size: 11px;' }, "HSL"),
+            [
+                {
+                  id: 'color-hue-text',
+                  func: setHue
+                }, {
+                  id: 'color-saturation-text',
+                  func: setSaturation
+                }, {
+                  id: 'color-lightness-text',
+                  func: setLightness
+                }
+              ].map(function (item, i) {
+                return h( 'input', {
+                  class: 'fl-1', type: 'number', style: ("margin-right: " + (i === 2 ? 0 : 2) + "px;"), onFocus: function (e) {
+                    enableActiveInput(item.id, APP.color.hsl[i]);
+                  }, onFocusOut: function () {
+                    disableActiveInput();
+                  }, onInput: function (e) {
+                    setActiveInput(e.target.value);
+                    item.func(e);
+                  }, value: VIEW.activeInput.id === item.id ? VIEW.activeInput.val : APP.color.hsl[i] })
+              })
+          ),
+          h( 'div', { class: 'fl fl-center-y', style: 'margin-bottom: 2px;' },
+            h( 'small', { style: 'width: 50px; font-size: 11px;' }, "RGB"),
+            [
+                {
+                  id: 'color-red-text',
+                  func: setRed
+                }, {
+                  id: 'color-green-text',
+                  func: setGreen
+                }, {
+                  id: 'color-blue-text',
+                  func: setBlue
+                }
+              ].map(function (item, i) {
+                return h( 'input', {
+                  class: 'fl-1', type: 'number', style: ("margin-right: " + (i === 2 ? 0 : 2) + "px;"), onFocus: function (e) {
+                    enableActiveInput(item.id, APP.color.rgb[i]);
+                  }, onFocusOut: function () {
+                    disableActiveInput();
+                  }, onInput: function (e) {
+                    setActiveInput(e.target.value);
+                    item.func(e);
+                  }, value: VIEW.activeInput.id === item.id ? VIEW.activeInput.val : APP.color.rgb[i] })
+              })
+          )
+          /* <div class='fl fl-center-y'>
+            <small style='width: 50px; font-size: 11px;'>HEX</small>
+            <input class='fl-1' type='text' />
+          </div> */
+        ),
+        h( 'div', { class: 'fl' },
+          h( 'div', {
+            class: 'fl-1 no-ptr h-25 b-r-2', style: ("margin-right: 10px; background: rgba(" + (APP.color.rgb[0]) + ", " + (APP.color.rgb[1]) + ", " + (APP.color.rgb[2]) + ", 255); margin-bottom: 10px; ") }
+          ),
+          APP.palette.filter(function (c) { return APP.color.rgb[0] === c[0] &&
+            APP.color.rgb[1] === c[1] &&
+            APP.color.rgb[2] === c[2] &&
+            APP.color.rgb[3] === c[3]; })
+            .length === 0
+            ? h( 'button', {
+                onClick: function () { paletteAdd(); }, class: 'w-30 h-25 fl fl-center bg-dark bord-dark b-r-2' },
+                h( 'img', { src: "img/insert.svg" })
+              )
+            : h( 'button', {
+              onClick: function () { paletteDelete(); }, class: 'w-30 h-25 fl fl-center bg-dark bord-dark b-r-2' },
+              h( 'img', { src: "img/delete.svg" })
+            )
+        ),
+        h( 'div', { class: 'fl fl-wrap overflow-none b-r-2', style: 'align-content: baseline;' },
+          APP.palette.map(function (c) { return h( 'button', {
+                onClick: function () {
+                  setRGB(c);
+                }, class: 'm-0', style: ("\n                  width: 44px;\n                  min-height: 25px;\n                  background: rgba(" + (c[0]) + ", " + (c[1]) + ", " + (c[2]) + ", " + (c[3]) + ");\n                  border: " + (APP.color.rgb[0] === c[0] &&
+                    APP.color.rgb[1] === c[1] &&
+                    APP.color.rgb[2] === c[2] &&
+                    APP.color.rgb[3] === c[3] ? '2px solid rgba(61,61,61, 1)' : '2px solid rgba(61,61,61, 0)') + ";\n                  box-shadow: inset 0px 0px 0px 1px rgba(255, 255, 255, " + (APP.color.rgb[0] === c[0] &&
+                    APP.color.rgb[1] === c[1] &&
+                    APP.color.rgb[2] === c[2] &&
+                    APP.color.rgb[3] === c[3] ? '255' : '0') + ");\n                ") }); }
+            )
+        )
+      )
+    )
+  )
+};
+
 var setTargetCanvas = function (frame, layer) {
   if (frame === undefined) { console.error('setTargetCanvas - no frame given'); }
   if (layer === undefined) { console.error('setTargetCanvas - no layer given'); }
 
-  APP.frameActive = frame;
-  APP.layerActive = layer;
+  if (frame >= 0 && frame < APP.frameCount && layer >= 0 && layer <= APP.layerCount) {
+    APP.frameActive = frame;
+    APP.layerActive = layer;
 
-  VIEW.render();
+    VIEW.render();
+  }
 };
 
 var seq = function (request, type, data) {
@@ -1137,57 +892,475 @@ var Timeline= function () {
             )
           ),
           h( 'div', { id: 'frames', class: 'fl-1 overflow hide-scroll', style: 'padding-bottom: 30px;' },
-            h( 'div', { class: 'fl-col-reverse' },
-              APP.layers.map(function (layer, li) {
-                  return h( 'div', {
-                    class: 'fl' },
-                    layer.frames.map(function (canvas, fi) {
-                        return h( 'button', {
-                          onClick: function () { setTargetCanvas(fi, li); }, class: 'w-30 h-30 fl fl-center bord-dark-r bord-dark-b bg-light rel', style: ("\n                            background: " + (APP.frameActive === fi && APP.layerActive === li
-                                ? 'rgba(52, 152, 219, 255)'
-                                : (APP.frameActive === fi || APP.layerActive === li)
-                                  ? 'rgba(100, 100, 100, 255)'
-                                  : 'rgba(0, 0, 0, 0)') + ";") },
-                          h( 'div', { class: 'abs bottom right p-5' }, h( 'small', { style: 'font-size: 8px;' }, h( 'b', null, fi + 1 )))
-                          /* <div class='bg-white' style='border-radius: 100%; width: 8px; height: 8px;' /> */
-                        )
-                      })
-                  )
-                })
-            )
+            h( 'canvas', { id: 'timeline-canvas', style: 'cursor: pointer;', onClick: function (e) {
+              var x = Math.floor(e.offsetX / 30);
+              var y = (APP.layerCount - 1) - Math.floor(e.offsetY / 30);
+              
+              setTargetCanvas(x, y);
+            } })
           )
         )
       )
   )
 };
 
-var loadData = function (ref) {
-  var onLoaded = ref.onLoaded;
-  var onError = ref.onError;
+var getPoint = function (imgDataArr, x, y, w, h) {
+  if (!imgDataArr) { throw Error(("setPoint: " + imgDataArr + " undefined")) }
+  if (!imgDataArr.length) { throw Error(("setPoint: " + imgDataArr + " not a valid array")) }
 
-  //console.time('startRead')
-  localforage.getItem('pixel-art-app').then(function (stored) {
-    //console.timeEnd('startRead')
-    for (var key in stored) {
-      APP[key] = stored[key];
-    }
+  if (x >= 0 && x < w && y >= 0 && y < h) { // check bounds
+    var i = (x + w * y) * 4;
+    return [
+      imgDataArr[i + 0],
+      imgDataArr[i + 1],
+      imgDataArr[i + 2],
+      imgDataArr[i + 3]
+    ]
+  }
 
-    onLoaded();
-  }).catch(function(err) {
-    console.log(err);
-    onError();
-  });
+  return [0, 0, 0, 0]
 };
 
-var saveData = function () {
-  //console.time('startwrite')
-  localforage.setItem('pixel-art-app', APP).then(function(value) {
-    // This will output `1`.
-    //console.timeEnd('startwrite')
-  }).catch(function(err) {
-    // This code runs if there were any errors
-    console.log(err);
-  });
+var setPoint = function (imgDataArr, x, y, w, h, color) {
+  if (!imgDataArr) { throw Error(("setPoint: " + imgDataArr + " undefined")) }
+  if (!imgDataArr.length) { throw Error(("setPoint: " + imgDataArr + " not a valid array")) }
+  
+  if (x >= 0 && x < w && y >= 0 && y < h) { // check bounds
+    var i = (x + w * y) * 4;
+    imgDataArr[i + 0] = color[0];
+    imgDataArr[i + 1] = color[1];
+    imgDataArr[i + 2] = color[2];
+    imgDataArr[i + 3] = color[3];
+  }
+};
+
+var areRGBAsEqual = function (c1, a, c2, b) {
+  return (
+    c1[a + 0] === c2[b + 0] &&
+    c1[a + 1] === c2[b + 1] &&
+    c1[a + 2] === c2[b + 2] &&
+    c1[a + 3] === c2[b + 3]
+  )
+};
+
+var getColorAtPixel = function (data, x, y, w) {
+  var linearCord = (y * w + x) * 4;
+
+  return [
+    data[linearCord + 0],
+    data[linearCord + 1],
+    data[linearCord + 2],
+    data[linearCord + 3]
+  ]
+};
+
+var fill = function (canvasImgData, startX, startY, w, h, color) { // http://www.williammalone.com/articles/html5-canvas-javascript-paint-bucket-tool/
+  var linear_cords = (startY * w + startX) * 4;
+
+  var pixel_stack = [{ x: startX, y: startY }];
+  var original_color = getColorAtPixel(canvasImgData, startX, startY, w);
+
+  if (areRGBAsEqual(color, 0, original_color, 0)) {
+    return
+  }
+
+  while (pixel_stack.length > 0) {
+    var new_pixel = pixel_stack.shift();
+    var x = new_pixel.x;
+    var y = new_pixel.y;
+
+    linear_cords = (y * w + x) * 4;
+
+    while (
+      y-- >= 0 &&
+      canvasImgData[linear_cords + 0] === original_color[0] &&
+      canvasImgData[linear_cords + 1] === original_color[1] &&
+      canvasImgData[linear_cords + 2] === original_color[2] &&
+      canvasImgData[linear_cords + 3] === original_color[3]) {
+        linear_cords -= w * 4;
+    }
+
+    linear_cords += w * 4;
+    y++;
+
+    var reached_left = false;
+    var reached_right = false;
+
+    while (
+      y++ < h &&
+      canvasImgData[linear_cords + 0] === original_color[0] &&
+      canvasImgData[linear_cords + 1] === original_color[1] &&
+      canvasImgData[linear_cords + 2] === original_color[2] &&
+      canvasImgData[linear_cords + 3] === original_color[3]
+    ) {
+      canvasImgData[linear_cords + 0] = color[0];
+      canvasImgData[linear_cords + 1] = color[1];
+      canvasImgData[linear_cords + 2] = color[2];
+      canvasImgData[linear_cords + 3] = color[3];
+
+      if (x > 0) {
+        if (
+          canvasImgData[linear_cords - 4 + 0] === original_color[0] &&
+          canvasImgData[linear_cords - 4 + 1] === original_color[1] &&
+          canvasImgData[linear_cords - 4 + 2] === original_color[2] &&
+          canvasImgData[linear_cords - 4 + 3] === original_color[3]
+        ) {
+          if (!reached_left) {
+            pixel_stack.push({ x: x - 1, y: y });
+            reached_left = true;
+          }
+        } else if (reached_left) {
+          reached_left = false;
+        }
+      }
+  
+      if (x < w - 1) {
+        if (
+          canvasImgData[linear_cords + 4 + 0] === original_color[0] &&
+          canvasImgData[linear_cords + 4 + 1] === original_color[1] &&
+          canvasImgData[linear_cords + 4 + 2] === original_color[2] &&
+          canvasImgData[linear_cords + 4 + 3] === original_color[3]
+        ) {
+          if (!reached_right) {
+            pixel_stack.push({ x: x + 1, y: y });
+            reached_right = true;
+          }
+        } else if (reached_right) {
+          reached_right = false;
+        }
+      }
+      
+      linear_cords += w * 4;
+    }
+  }
+};
+
+var line = function (startX, startY, endX, endY, func) {
+  var dx = Math.abs(endX - startX);
+  var dy = Math.abs(endY - startY);
+
+  var xDir = endX - startX >= 0 ? 1 : -1;
+  var yDir = endY - startY >= 0 ? 1 : -1;
+  
+  var lineX = startX;
+  var lineY = startY;
+
+  var step = dx >= dy ? dx : dy;
+
+  dx = dx / step;
+  dy = dy / step;
+  
+  var i = 0;
+  while (i < step) {
+    func(Math.floor(lineX), Math.floor(lineY));
+
+    lineX += (dx * xDir);
+    lineY += (dy * yDir);
+    i += 1;
+  }
+
+  func(Math.floor(lineX), Math.floor(lineY));
+};
+
+var circle = function (xCenter, yCenter, currX, currY, func) {
+  var radius = Math.floor(Math.sqrt(Math.pow((currX - xCenter), 2) + Math.pow((currY - yCenter), 2)));
+
+  if (radius <= 0) { return }
+
+  var x = 0;
+  var y = radius;
+  var p = 1 - radius;
+
+  var circlePlot = function () {
+    func(xCenter + x, yCenter + y);
+    func(xCenter + y, yCenter + x);
+    func(xCenter - x, yCenter + y);
+    func(xCenter - y, yCenter + x);
+    func(xCenter + x, yCenter - y);
+    func(xCenter + y, yCenter - x);
+    func(xCenter - x, yCenter - y);
+    func(xCenter - y, yCenter - x);
+  };
+
+  // Plot first set of points
+  circlePlot();
+
+  while (x <= y) {
+    x++;
+    if (p < 0) {
+      p += 2 * x + 1; // Mid point is inside therefore y remains same
+    } else { // Mid point is outside the circle so y decreases
+      y--;
+      p += 2 * (x - y) + 1;
+    }
+
+    circlePlot();
+  }
+};
+
+var squareFilled = function (startX, startY, endX, endY, w, h, color, func) {
+  var points = [];
+
+  var dx = Math.abs(endX - startX);
+  var dy = Math.abs(endY - startY);
+
+  var xDir = endX - startX >= 0 ? 1 : -1;
+  var yDir = endY - startY >= 0 ? 1 : -1;
+
+  var lineX = startX;
+  var lineY = startY;
+
+  var xStep = 0;
+  var yStep = 0;
+
+  while (xStep <= dx) {
+    yStep = 0;
+    lineY = startY;
+
+    while (yStep <= dy) {
+      func(lineX, lineY);
+      //points.push({ x: lineX, y: lineY })
+
+      lineY += (1 * yDir);
+      yStep += 1;
+    }
+
+    lineX += (1 * xDir);
+    xStep += 1;
+  }
+
+  return points
+};
+
+var square = function (startX, startY, endX, endY, func) {
+  var dx = Math.abs(endX - startX);
+  var dy = Math.abs(endY - startY);
+
+  var xDir = endX - startX >= 0 ? 1 : -1;
+  var yDir = endY - startY >= 0 ? 1 : -1;
+
+  var lineX = startX;
+  var lineY = startY;
+  var i = 0;
+
+  func(lineX, lineY);
+
+  while (i < dx) {
+    lineX += (1 * xDir);
+    func(lineX, startY);
+    func(lineX, (startY + (dy * yDir)));
+    i += 1;
+  }
+
+  i = 0;
+
+  while (i < dy) {
+    lineY += (1 * yDir);
+    func(startX, lineY);
+    func((startX + (dx * xDir)), lineY);
+    i += 1;
+  }
+};
+
+var paintCanvas = function (gestureEvent) {
+  // Reset
+  VIEW.canvasPreview.ctx.clearRect(0, 0, APP.width, APP.height);
+  VIEW.canvasPreview.imgData = VIEW.canvasPreview.ctx.getImageData(0, 0, APP.width, APP.height);
+
+  // Whole or Selection
+  var target = APP.layers[APP.layerActive].frames[APP.frameActive].data; // or selection buffer
+  var preview = VIEW.canvasPreview.imgData.data;
+
+  // Translate coordinates based on current screen position and canvas scale
+  var bb = VIEW.canvasView.dom.getBoundingClientRect();
+
+  var scaleX = bb.width / VIEW.canvasView.dom.width;
+  var scaleY = bb.height / VIEW.canvasView.dom.height;
+
+  var startX = Math.floor((VIEW.window.startX - bb.x) / scaleX);
+  var startY = Math.floor((VIEW.window.startY - bb.y) / scaleY);
+  var prevX = Math.floor((VIEW.window.prevX - bb.x) / scaleX);
+  var prevY = Math.floor((VIEW.window.prevY - bb.y) / scaleY);
+  var currX = Math.floor((VIEW.window.currX - bb.x) / scaleX);
+  var currY = Math.floor((VIEW.window.currY - bb.y) / scaleY);
+
+  var setBrushPoints = function (canvas, x, y, w, h, color) {
+    squareFilled(x - VIEW.brushSize, y - VIEW.brushSize, x + VIEW.brushSize, y + VIEW.brushSize, w, h, color, function (x, y) {
+      setPoint(canvas, x, y, w, h, color);
+    });
+  };
+
+  if (gestureEvent === 'hover' && APP.tool !== 'eye-dropper' && APP.tool !== 'move') {
+    setBrushPoints(preview, currX, currY, APP.width, APP.height, APP.tool !== 'eraser' ? APP.color.rgb : [0, 0, 0, 50]);
+    VIEW.render();
+
+    return
+  }
+
+  // Setup Undo
+  if (gestureEvent === 'start' && APP.tool !== 'eye-dropper') {
+    var copy = new ImageData(APP.width, APP.height);
+    copy.data.set(APP.layers[APP.layerActive].frames[APP.frameActive].data);
+    var layerActive = APP.layerActive;
+    var frameActive = APP.frameActive;
+    
+    addToUndo(APP.tool);
+
+    VIEW.currUndoRef.undo = function () {
+      APP.frameActive = frameActive;
+      APP.layerActive = layerActive;
+      APP.layers[layerActive].frames[frameActive].data.set(copy.data);
+    };
+  }
+  
+  // Eye dropper
+  if (gestureEvent === 'end' && APP.tool === 'eye-dropper') {
+    var color = getPoint(target, currX, currY, APP.width, APP.height);
+    
+    if (color[3] !== 0) {
+      setRGB(color);
+    }
+  }
+
+  // Fill
+  if (gestureEvent === 'end' && APP.tool === 'fill') {
+    fill(target, currX, currY, APP.width, APP.height, APP.color.rgb);
+  }
+
+  // Points
+  if (APP.tool === 'pencil' || APP.tool === 'eraser') {
+    if (APP.tool === 'eraser') {
+      setBrushPoints(preview, currX, currY, APP.width, APP.height, [0, 0, 0, 50]);
+    }
+    
+    line(prevX, prevY, currX, currY, function (x, y) {
+      setBrushPoints(target, x, y, APP.width, APP.height, APP.tool === 'pencil' ? APP.color.rgb : [0, 0, 0, 0]);
+    });
+  }
+
+  // Geometry
+  if (APP.tool === 'line' || APP.tool === 'circle' || APP.tool === 'square') {
+    var funcs = { 'line': line, 'circle': circle, 'square': square };
+    
+    funcs[APP.tool](startX, startY, currX, currY, function (x, y) {
+      setBrushPoints(gestureEvent === 'start' || gestureEvent === 'resume' ? preview : target, x, y, APP.width, APP.height, APP.color.rgb);
+    });
+  }
+
+  // Move
+  if (APP.tool === 'move') {
+    if (gestureEvent === 'start') {
+      // Frame to Selection
+      VIEW.canvasSelection.ctx.putImageData(APP.layers[APP.layerActive].frames[APP.frameActive], 0, 0);
+      VIEW.canvasSelection.imgData = VIEW.canvasSelection.ctx.getImageData(0, 0, APP.width, APP.height);
+
+      // Selection to Preview
+      VIEW.canvasPreview.ctx.putImageData(VIEW.canvasSelection.imgData, 0, 0);
+      VIEW.canvasPreview.imgData = VIEW.canvasPreview.ctx.getImageData(0, 0, APP.width, APP.height);
+
+      // Clear main canvas
+      APP.layers[APP.layerActive].frames[APP.frameActive] = new ImageData(APP.width, APP.height);
+    }
+
+    if (gestureEvent === 'resume') {
+      // Selection to Preview
+      VIEW.canvasPreview.ctx.putImageData(VIEW.canvasSelection.imgData, prevX - startX, prevY - startY);
+      VIEW.canvasPreview.imgData = VIEW.canvasPreview.ctx.getImageData(0, 0, APP.width, APP.height);
+    }
+
+    if (gestureEvent === 'end') {
+      // Selection to Preview
+      VIEW.canvasPreview.ctx.putImageData(VIEW.canvasSelection.imgData, prevX - startX, prevY - startY);
+      VIEW.canvasPreview.imgData = VIEW.canvasPreview.ctx.getImageData(0, 0, APP.width, APP.height);
+
+      // Preview to Main
+      APP.layers[APP.layerActive].frames[APP.frameActive] = VIEW.canvasPreview.ctx.getImageData(0, 0, APP.width, APP.height);
+
+      VIEW.canvasPreview.ctx.clearRect(0, 0, APP.width, APP.height);
+      VIEW.canvasPreview.imgData = VIEW.canvasPreview.ctx.getImageData(0, 0, APP.width, APP.height);
+    }
+  }
+
+  // Setup Redo
+  if (gestureEvent === 'end' && APP.tool !== 'eye-dropper') {
+    var copy$1 = new ImageData(APP.width, APP.height);
+    copy$1.data.set(APP.layers[APP.layerActive].frames[APP.frameActive].data);
+    var layerActive$1 = APP.layerActive;
+    var frameActive$1 = APP.frameActive;
+
+    VIEW.currUndoRef.redo = function () {
+      APP.frameActive = frameActive$1;
+      APP.layerActive = layerActive$1;
+      APP.layers[layerActive$1].frames[frameActive$1].data.set(copy$1.data);
+    };
+  }
+
+  VIEW.render();
+};
+
+var Canvas = function () {
+  return h( 'div', { id: 'canvas-outer-scroll', class: ("overflow fl-1 cursor-" + (APP.tool)) },
+    h( 'div', { id: 'canvas-inner-scroll', 'data-request': 'paintCanvas', 'data-hover': 'paintCanvas', class: 'fl fl-center fl-1', style: 'width: 1920px; height: 1920px;' },
+      h( 'canvas', {                      
+        id: 'canvas-view', width: APP.width, height: APP.height, style: 'width: 1920px; height: 1920px; transform: scale(.25); pointer-events: none;' })
+    )  
+  )
+};
+
+var Header = function () {
+  return h( 'div', { class: 'h-40 bg-light bord-dark-b fl' },
+    h( 'div', { class: "fl w-full" },
+      h( 'div', { class: "fl-1 fl" },
+        h( 'div', { class: "fl bord-dark-r rel w-40", onMouseLeave: function () {
+            VIEW.file.open = false;
+            VIEW.render();
+          } },
+          h( 'button', {
+            onClick: function () {
+              VIEW.file.open = !VIEW.file.open;
+              VIEW.render();
+            }, class: "fl fl-center m-0 p-0 w-40" },
+            h( 'img', { src: "img/bars.svg" })
+          ),
+          h( 'div', {
+            class: "bg-light fl-column bord-dark abs z-5", style: ("visibility: " + (VIEW.file.open ? 'visible' : 'hidden') + "; top: 10px; left: 10px;") },
+              h( 'button', {
+                onClick: function () {
+                  VIEW.newCanvas.open = true;
+                  VIEW.file.open = false;
+                  VIEW.render();
+                }, class: "m-0 p-h-15 h-40 fl fl-center-y" },
+                h( 'img', { src: "img/new.svg" }),
+                h( 'small', { class: "bold p-h-10", style: 'text-transform: capitalize;' }, "New")
+              ),
+              h( 'button', {
+                onClick: function () {
+                  VIEW.downloadCanvas.open = true;
+                  VIEW.file.open = false;
+                  VIEW.render();
+                }, class: "m-0 p-h-15 h-40 fl fl-center-y" },
+                h( 'img', { src: "img/download.svg" }),
+                h( 'small', { class: "bold p-h-10", style: 'text-transform: capitalize;' }, "download")
+              )
+          )
+        ),
+        h( 'div', { class: 'fl-1 fl fl-justify-center' },
+          h( 'button', {
+            onClick: function () { undo(); }, class: "fl fl-center m-0 p-0 w-40 bord-dark-l bord-dark-r" },
+            h( 'img', { src: "img/undo.svg" })
+          ),
+          h( 'button', {
+            onClick: function () { redo(); }, class: "fl fl-center m-0 p-0 w-40 bord-dark-r" },
+            h( 'img', { src: "img/redo.svg" })
+          )
+        )
+      ),
+      h( 'div', { class: "fl", style: "max-width: 241px; min-width: 241px;" }
+        
+      )
+    )
+  )
+
 };
 
 var downloadCanvas = function (e) {
@@ -1291,6 +1464,43 @@ var View = /*@__PURE__*/(function (Component) {
             }
           }
         });
+        
+        var tile = 30;
+
+        VIEW.canvasTimeline.width = APP.frameCount * tile * 2;
+        VIEW.canvasTimeline.height = APP.layerCount * tile * 2;
+        VIEW.canvasTimeline.style.width = (APP.frameCount * tile) + "px";
+        VIEW.canvasTimeline.style.height = (APP.layerCount * tile) + "px";
+        var ctx = VIEW.canvasTimeline.getContext('2d');
+
+        VIEW.canvasTimelineTemp.width = APP.frameCount * tile * 2;
+        VIEW.canvasTimelineTemp.height = APP.layerCount * tile * 2;
+        var ctxTemp = VIEW.canvasTimelineTemp.getContext('2d');
+
+        APP.layers.map(function (layer, li) {
+          layer.frames.map(function (canvas, fi) {
+            var w = tile * 2;
+            var h = tile * 2;
+            var x = fi * w;
+            var y = li * h;
+            var BG = APP.frameActive === fi && APP.layerActive === li
+                        ? 'rgba(52, 152, 219, 255)'
+                        : (APP.frameActive === fi || APP.layerActive === li)
+                          ? 'rgba(100, 100, 100, 255)'
+                          : 'rgba(50, 50, 50, 255)';
+
+
+            ctx.fillStyle = 'rgba(33, 33, 33, 255)';
+            ctx.fillRect(x, ((APP.layerCount - 1) * h) - y, w, h);
+            
+            ctx.fillStyle = BG;
+            ctx.fillRect(x, ((APP.layerCount - 1) * h) - y, w - 2, h - 2);
+            
+            ctxTemp.putImageData(canvas, x + 5, (((APP.layerCount - 1) * h) - y) + 5, 0, 0, w - 13, h - 13);    
+          });
+        });
+
+        ctx.drawImage(VIEW.canvasTimelineTemp, 0, 0);
       });
     };
 
@@ -1393,10 +1603,6 @@ var View = /*@__PURE__*/(function (Component) {
     VIEW.window.prevY = 0;
     VIEW.window.currX = 0;
     VIEW.window.currY = 0;
-
-    setTimeout(function () {
-      saveData();
-    }, 50);
   };
 
   View.prototype.onGestureHover = function onGestureHover (e) {
@@ -1423,79 +1629,16 @@ var View = /*@__PURE__*/(function (Component) {
 
     return (
       h( 'div', {
-        class: 'h-full relative', onMouseDown: function (e) { if (e.which === 1) { this$1.onGestureDown(e); } }, onMouseMove: function (e) { this$1.dragOrHover(e); }, onMouseUp: function (e) { this$1.onGestureEnd(e); } },
-        h( 'div', { class: 'h-40 bg-light bord-dark-b fl' },
-          h( 'div', { class: "fl w-full" },
-            h( 'div', { class: "fl-1 fl" },
-              h( 'div', { class: "fl bord-dark-r rel w-40", onMouseLeave: function () {
-                  VIEW.file.open = false;
-                  VIEW.render();
-                } },
-                h( 'button', {
-                  onClick: function () {
-                    VIEW.file.open = !VIEW.file.open;
-                    VIEW.render();
-                  }, class: "fl fl-center m-0 p-0 w-40" },
-                  h( 'img', { src: "img/bars.svg" })
-                ),
-                h( 'div', {
-                  class: "bg-light fl-column bord-dark abs z-5", style: ("visibility: " + (VIEW.file.open ? 'visible' : 'hidden') + "; top: 10px; left: 10px;") },
-                    h( 'button', {
-                      onClick: function () {
-                        VIEW.newCanvas.open = true;
-                        VIEW.file.open = false;
-                        VIEW.render();
-                      }, class: "m-0 p-h-15 h-40 fl fl-center-y" },
-                      h( 'img', { src: "img/new.svg" }),
-                      h( 'small', { class: "bold p-h-10", style: 'text-transform: capitalize;' }, "New")
-                    ),
-                    h( 'button', {
-                      onClick: function () {
-                        VIEW.downloadCanvas.open = true;
-                        VIEW.file.open = false;
-                        VIEW.render();
-                      }, class: "m-0 p-h-15 h-40 fl fl-center-y" },
-                      h( 'img', { src: "img/download.svg" }),
-                      h( 'small', { class: "bold p-h-10", style: 'text-transform: capitalize;' }, "download")
-                    )
-                )
-              ),
-              h( 'div', { class: 'fl-1 fl fl-justify-center' },
-                h( 'button', {
-                  onClick: function () { undo(); }, class: "fl fl-center m-0 p-0 w-40 bord-dark-l bord-dark-r" },
-                  h( 'img', { src: "img/undo.svg" })
-                ),
-                h( 'button', {
-                  onClick: function () { redo(); }, class: "fl fl-center m-0 p-0 w-40 bord-dark-r" },
-                  h( 'img', { src: "img/redo.svg" })
-                )
-              )
-            ),
-            h( 'div', { class: "fl", style: "max-width: 241px; min-width: 241px;" }
-              
-            )
-          )
-        ),
+        class: 'h-full relative', onMouseDown: function (e) { if (e.which === 1) { this$1.onGestureDown(e); } }, onMouseMove: function (e) { this$1.dragOrHover(e); }, onMouseUp: function (e) { this$1.onGestureEnd(e); }, onMouseLeave: function (e) { this$1.onGestureEnd(e); } }
+        /* {ENV === 'DEV' && <div id='debugger' class='abs' style='right: 0px; left: 0px; width: 100px; height: 100px; background: white; z-index: 1000;'>
+          <canvas />
+        </div>} */,
+        h( Header, null ),
         h( 'div', { class: 'fl', style: 'height: calc(100% - 40px); ' },
-          h( 'div', { class: 'w-40 bg-light bord-dark-r' },
-            ['pencil', 'eraser', 'line', 'circle', 'square', 'fill', 'eye-dropper', 'move'].map(function (tool) { return h( 'button', {
-                  onClick: function () { setTool(tool); }, class: "fl fl-center m-0 p-0 w-40 h-40 bord-dark-r", style: ("" + (APP.tool === tool ? 'background: rgba(52, 152, 219, 255);' : '')) },
-                  h( 'img', { src: ("img/" + tool + ".svg") })
-                ); }
-              )
-          ),
+          h( Toolbar, null ),
           h( 'div', { class: 'fl-column', style: 'width: calc(100% - 281px);' },
-            h( 'div', {
-              id: 'canvas-outer-scroll', class: ("overflow fl-1 cursor-" + (APP.tool)) },
-              h( Canvas, null )
-            ),
+            h( Canvas, null ),
             h( Timeline, null )
-            /* <div class='fl-1 h-full fl'>
-              <div class='fl-1 fl-column h-full' style='width: calc(100% - 281px);'>
-                <Canvas />
-                <Timeline />
-              </div>
-            </div> */
           ),
           h( 'div', { class: 'bg-light bord-dark-l fl-column', style: "max-width: 241px; min-width: 241px;" },
             h( 'div', { class: 'bord-dark-b fl-column overflow' },
@@ -1504,38 +1647,32 @@ var View = /*@__PURE__*/(function (Component) {
               ),
               h( 'div', { class: 'fl-1 overflow' },
                 h( 'div', { class: "fl fl-center p-10" },
-                  h( 'small', { class: "bold", style: "width: 150px;" }, "Brush Size"),
-                  h( 'select', {
-                    onInput: function (e) {
-                      VIEW.brushSize = parseInt(e.target.value);
-                    }, value: VIEW.brushSize, class: "w-full" },
-                      [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(function (size, i) {
-                          return h( 'option', { value: i }, size)
-                        })
+                  h( 'small', { style: "width: 150px; font-size: 11px;" }, "Brush Size"),
+                  h( 'div', { class: 'fl-1 select' },
+                    h( 'select', {
+                      onInput: function (e) {
+                        VIEW.brushSize = parseInt(e.target.value);
+                      }, value: VIEW.brushSize, class: "w-full" },
+                        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(function (size, i) {
+                            return h( 'option', { value: i }, size)
+                          })
+                    )
                   )
                 )
               )
             ),
             h( Color, null ),
-            h( 'div', { class: 'fl-1 bord-dark-b fl-column overflow' },
+            h( 'div', { class: 'bord-dark-b fl-column overflow', style: 'min-height: 249px; max-height: 249px;' },
               h( 'div', { class: 'h-30 bg-mid bord-dark-b fl fl-center-y p-h-10' },
                 h( 'small', null, h( 'b', null, "History" ) )
               ),
               h( 'div', { class: 'fl-1 overflow' },
                 VIEW.undo.map(function (entry, i) {
-                    return h( 'button', { class: ("p-h-10 h-30 w-full txt-left fl fl-center-y " + (VIEW.undoPos === i ? 'bg-xlight' : '')) },
+                    return h( 'button', { class: ("p-h-10 h-30 w-full txt-left fl fl-center-y no-ptr " + (VIEW.undoPos === i ? 'bg-xlight' : '')) },
                       h( 'img', { width: '10', height: '10', style: 'margin-right: 10px;', src: ("img/" + (entry.icon)) }),
                       h( 'small', { style: 'text-transform: capitalize; font-size: 11px;' }, h( 'b', null, entry.action ))
                     )
                   })
-              )
-            ),
-            h( 'div', { style: 'min-height: 249px; max-height: 249px;' },
-              h( 'div', { class: 'h-30 bg-mid bord-dark-b fl fl-center-y p-h-10' },
-                h( 'small', null, h( 'b', null, "Timeline" ) )
-              ),
-              h( 'div', { class: 'overflow fl-1' }
-                
               )
             )
           )
@@ -1546,18 +1683,20 @@ var View = /*@__PURE__*/(function (Component) {
             h( 'div', { class: "p-10 bg-light bord-dark-l bord-dark-r bord-dark-b", style: 'border-bottom-right-radius: 5px; border-bottom-left-radius: 5px;' },
               h( 'div', { class: "m-5 p-v-5" },
                 h( 'div', { class: "fl fl-center" },
-                  h( 'small', { class: "bold", style: "width: 150px;" }, "Dimensions"),
-                  h( 'select', {
-                    onInput: function (e) {
-                      var val = e.target.value.split('x');
-                      VIEW.newCanvas.w = parseInt(val[0]);
-                      VIEW.newCanvas.h = parseInt(val[1]);
-                    }, class: "w-full" },
-                    h( 'option', { value: "32x32" }, "32x32"),
-                    h( 'option', { value: "50x50" }, "50x50"),
-                    h( 'option', { value: "64x64" }, "64x64"),
-                    h( 'option', { value: "100x100" }, "100x100"),
-                    h( 'option', { value: "128x128" }, "128x128")
+                  h( 'small', { class: "bold", style: "width: 100px;" }, "Dimensions"),
+                  h( 'div', { class: 'fl-1 select' },
+                    h( 'select', {
+                      onInput: function (e) {
+                        var val = e.target.value.split('x');
+                        VIEW.newCanvas.w = parseInt(val[0]);
+                        VIEW.newCanvas.h = parseInt(val[1]);
+                      }, class: "w-full" },
+                      h( 'option', { value: "32x32" }, "32x32"),
+                      h( 'option', { value: "50x50" }, "50x50"),
+                      h( 'option', { value: "64x64" }, "64x64"),
+                      h( 'option', { value: "100x100" }, "100x100"),
+                      h( 'option', { value: "128x128" }, "128x128")
+                    )
                   )
                 )
               ),
@@ -1583,29 +1722,33 @@ var View = /*@__PURE__*/(function (Component) {
               h( 'div', { class: "p-10 bg-light bord-dark-l bord-dark-r bord-dark-b", style: 'border-bottom-right-radius: 5px; border-bottom-left-radius: 5px;' },
                 h( 'div', { class: "m-5 p-v-5" },
                   h( 'div', { class: "fl fl-center" },
-                    h( 'small', { class: "bold", style: "width: 150px;" }, "Type"),
-                    h( 'select', {
-                      onInput: function (e) {
-                        VIEW.downloadCanvas.type = e.target.value;
-                      }, value: VIEW.downloadCanvas.type, id: "config-download-size", class: "w-full" },
-                        h( 'option', { value: "frame" }, "Frame"),
-                        h( 'option', { value: "spritesheet" }, "Spritesheet")
+                    h( 'small', { class: "bold", style: "width: 100px;" }, "Type"),
+                    h( 'div', { class: 'fl-1 select' },
+                      h( 'select', {
+                        onInput: function (e) {
+                          VIEW.downloadCanvas.type = e.target.value;
+                        }, value: VIEW.downloadCanvas.type, id: "config-download-size", class: "w-full" },
+                          h( 'option', { value: "frame" }, "Frame"),
+                          h( 'option', { value: "spritesheet" }, "Spritesheet")
+                      )
                     )
                   )
                 ),
                 h( 'div', { class: "m-5 p-v-5" },
                     h( 'div', { class: "fl fl-center" },
-                      h( 'small', { class: "bold", style: "width: 150px;" }, "Size"),
-                      h( 'select', {
-                        onInput: function (e) {
-                          VIEW.downloadCanvas.size = parseInt(e.target.value);
-                        }, value: VIEW.downloadCanvas.size, id: "config-download-size", class: "w-full" },
-                          h( 'option', { value: "2" }, "2x"),
-                          h( 'option', { value: "4" }, "4x"),
-                          h( 'option', { value: "8" }, "8x"),
-                          h( 'option', { value: "16" }, "16x"),
-                          h( 'option', { value: "32" }, "32x"),
-                          h( 'option', { value: "64" }, "64x")
+                      h( 'small', { class: "bold", style: "width: 100px;" }, "Size"),
+                      h( 'div', { class: 'fl-1 select' },
+                        h( 'select', {
+                          onInput: function (e) {
+                            VIEW.downloadCanvas.size = parseInt(e.target.value);
+                          }, value: VIEW.downloadCanvas.size, id: "config-download-size", class: "w-full" },
+                            h( 'option', { value: "2" }, "2x"),
+                            h( 'option', { value: "4" }, "4x"),
+                            h( 'option', { value: "8" }, "8x"),
+                            h( 'option', { value: "16" }, "16x"),
+                            h( 'option', { value: "32" }, "32x"),
+                            h( 'option', { value: "64" }, "64x")
+                        )
                       )
                     )
                 ),
@@ -1632,6 +1775,35 @@ var View = /*@__PURE__*/(function (Component) {
   return View;
 }(m));
 
+var loadData = function (ref) {
+  var onLoaded = ref.onLoaded;
+  var onError = ref.onError;
+
+  //console.time('startRead')
+  localforage.getItem('pixel-art-app').then(function (stored) {
+    //console.timeEnd('startRead')
+    for (var key in stored) {
+      APP[key] = stored[key];
+    }
+
+    onLoaded();
+  }).catch(function(err) {
+    console.log(err);
+    onError();
+  });
+};
+
+var saveData = function () {
+  setTimeout(function () {
+    console.time('startwrite');
+    localforage.setItem('pixel-art-app', APP).then(function(value) {
+      console.timeEnd('startwrite');
+    }).catch(function(err) {
+      console.log(err);
+    });
+  }, 50);
+};
+
 var onProgramStart = function () {
   console.log('Program started.');
 
@@ -1648,14 +1820,14 @@ var onProgramStart = function () {
 
   setupKeyListeners();
   
-  window.addEventListener('keyup', function () {
-    saveData();
-  });  
+  window.addEventListener('keyup', saveData);
+  window.addEventListener('mouseup', saveData);
 };
 
 window.addEventListener('load', onProgramStart);
-
-window.addEventListener('beforeunload', function (event) {
-  event.returnValue = "Are you sure you want to leave?";
-});
+if (ENV === 'PROD') {
+  window.addEventListener('beforeunload', function (event) {
+    event.returnValue = "Are you sure you want to leave?";
+  });
+}
 //# sourceMappingURL=bundle.js.map

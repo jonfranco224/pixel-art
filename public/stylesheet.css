@@ -104,7 +104,7 @@ input[type='text'], input[type='number'] {
   border-radius: 2px;
   color: rgba(255, 255, 255, .9);
   padding: 6px 5px 7px 10px;
-  height: 26px;
+  height: 27px;
 }
 
 input[type='text']:focus,

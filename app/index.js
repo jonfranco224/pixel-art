@@ -98,6 +98,43 @@ class View extends Component{
             }
           }
         })
+        
+        const tile = 30
+
+        VIEW.canvasTimeline.width = APP.frameCount * tile * 2
+        VIEW.canvasTimeline.height = APP.layerCount * tile * 2
+        VIEW.canvasTimeline.style.width = `${APP.frameCount * tile}px`
+        VIEW.canvasTimeline.style.height = `${APP.layerCount * tile}px`
+        const ctx = VIEW.canvasTimeline.getContext('2d')
+
+        VIEW.canvasTimelineTemp.width = APP.frameCount * tile * 2
+        VIEW.canvasTimelineTemp.height = APP.layerCount * tile * 2
+        const ctxTemp = VIEW.canvasTimelineTemp.getContext('2d')
+
+        APP.layers.map((layer, li) => {
+          layer.frames.map((canvas, fi) => {
+            const w = tile * 2
+            const h = tile * 2
+            const x = fi * w
+            const y = li * h
+            const BG = APP.frameActive === fi && APP.layerActive === li
+                        ? 'rgba(52, 152, 219, 255)'
+                        : (APP.frameActive === fi || APP.layerActive === li)
+                          ? 'rgba(100, 100, 100, 255)'
+                          : 'rgba(50, 50, 50, 255)'
+
+
+            ctx.fillStyle = 'rgba(33, 33, 33, 255)'
+            ctx.fillRect(x, ((APP.layerCount - 1) * h) - y, w, h)
+            
+            ctx.fillStyle = BG
+            ctx.fillRect(x, ((APP.layerCount - 1) * h) - y, w - 2, h - 2)
+            
+            ctxTemp.putImageData(canvas, x + 5, (((APP.layerCount - 1) * h) - y) + 5, 0, 0, w - 13, h - 13)    
+          })
+        })
+
+        ctx.drawImage(VIEW.canvasTimelineTemp, 0, 0)
       })
     }
 
@@ -225,7 +262,11 @@ class View extends Component{
         class='h-full relative'
         onMouseDown={(e) => { if (e.which === 1) this.onGestureDown(e); }}
         onMouseMove={(e) => { this.dragOrHover(e) }}
-        onMouseUp={(e) => { this.onGestureEnd(e) }}>
+        onMouseUp={(e) => { this.onGestureEnd(e) }}
+        onMouseLeave={(e) => { this.onGestureEnd(e) }}>
+        {/* {ENV === 'DEV' && <div id='debugger' class='abs' style='right: 0px; left: 0px; width: 100px; height: 100px; background: white; z-index: 1000;'>
+          <canvas />
+        </div>} */}
         <Header />
         <div class='fl' style='height: calc(100% - 40px); '>
           <Toolbar />
@@ -259,27 +300,19 @@ class View extends Component{
               </div>
             </div>
             <Color />
-            <div class='fl-1 bord-dark-b fl-column overflow'>
+            <div class='bord-dark-b fl-column overflow' style='min-height: 249px; max-height: 249px;'>
               <div class='h-30 bg-mid bord-dark-b fl fl-center-y p-h-10'>
                 <small><b>History</b></small>
               </div>
               <div class='fl-1 overflow'>
                 {
                   VIEW.undo.map((entry, i) => {
-                    return <button class={`p-h-10 h-30 w-full txt-left fl fl-center-y ${VIEW.undoPos === i ? 'bg-xlight' : ''}`} >
+                    return <button class={`p-h-10 h-30 w-full txt-left fl fl-center-y no-ptr ${VIEW.undoPos === i ? 'bg-xlight' : ''}`} >
                       <img width='10' height='10' style='margin-right: 10px;' src={`img/${entry.icon}`} />
                       <small style='text-transform: capitalize; font-size: 11px;'><b>{entry.action}</b></small>
                     </button>
                   })
                 }
-              </div>
-            </div>
-            <div style='min-height: 249px; max-height: 249px;'>
-              <div class='h-30 bg-mid bord-dark-b fl fl-center-y p-h-10'>
-                <small><b>Timeline</b></small>
-              </div>
-              <div class='overflow fl-1'>
-                
               </div>
             </div>
           </div>
@@ -290,20 +323,22 @@ class View extends Component{
             <div class="p-10 bg-light bord-dark-l bord-dark-r bord-dark-b" style='border-bottom-right-radius: 5px; border-bottom-left-radius: 5px;'>
               <div class="m-5 p-v-5">
                 <div class="fl fl-center">
-                  <small class="bold" style="width: 150px;">Dimensions</small>
-                  <select
-                    onInput={(e) => {
-                      const val = e.target.value.split('x')
-                      VIEW.newCanvas.w = parseInt(val[0])
-                      VIEW.newCanvas.h = parseInt(val[1])
-                    }}
-                    class="w-full">
-                    <option value="32x32">32x32</option>
-                    <option value="50x50">50x50</option>
-                    <option value="64x64">64x64</option>
-                    <option value="100x100">100x100</option>
-                    <option value="128x128">128x128</option>
-                  </select>
+                  <small class="bold" style="width: 100px;">Dimensions</small>
+                  <div class='fl-1 select'>
+                    <select
+                      onInput={(e) => {
+                        const val = e.target.value.split('x')
+                        VIEW.newCanvas.w = parseInt(val[0])
+                        VIEW.newCanvas.h = parseInt(val[1])
+                      }}
+                      class="w-full">
+                      <option value="32x32">32x32</option>
+                      <option value="50x50">50x50</option>
+                      <option value="64x64">64x64</option>
+                      <option value="100x100">100x100</option>
+                      <option value="128x128">128x128</option>
+                    </select>
+                  </div>
                 </div>
               </div>
               <div class="fl" style="padding-top: 5px;">

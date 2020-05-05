@@ -114,7 +114,7 @@ const paletteDelete = (i) => {
 
 export const Color = () => {
   return (
-    <div>
+    <div class='bord-dark-b fl-1'>
       <div class='h-30 bg-mid bord-dark-b fl fl-center-y p-h-10'>
         <small><b>Color</b></small>
       </div>

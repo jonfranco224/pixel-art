@@ -1,5 +1,4 @@
 import resolve from '@rollup/plugin-node-resolve'
-import serve from 'rollup-plugin-serve'
 import filesize from 'rollup-plugin-filesize'
 import buble from 'rollup-plugin-buble'
 import svgi from 'rollup-plugin-svgi'
@@ -29,11 +28,6 @@ export default {
       transforms: { asyncAwait: false }
     }),
     resolve(),
-    DEV && serve({
-      open: true,
-      port: 4000,
-      contentBase: ['public']
-    }),
     PROD && terser(),
     PROD && filesize({
       showMinifiedSize: false,

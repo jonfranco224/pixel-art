@@ -2,6 +2,7 @@
   "name": "pixel-art-app",
   "version": "0.3.0",
   "dependencies": {
+    "express": "^4.17.1",
     "preact": "^10.4.1"
   },
   "devDependencies": {

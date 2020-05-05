@@ -1,39 +1,37 @@
-import nodeResolve from 'rollup-plugin-node-resolve';
-import buble from 'rollup-plugin-buble';
-import { uglify } from 'rollup-plugin-uglify';
-import es3 from 'rollup-plugin-es3';
-import svgi from 'rollup-plugin-svgi';
+import resolve from '@rollup/plugin-node-resolve'
+import filesize from 'rollup-plugin-filesize'
+import buble from 'rollup-plugin-buble'
+import svgi from 'rollup-plugin-svgi'
+import { terser } from 'rollup-plugin-terser'
+
+const {
+  DEV = false,
+  PROD = false
+} = process.env
 
 export default {
-	input: 'app/index.js',
-	output: {
-		file: 'public/bundle.js',
-		format: 'iife',
-		sourcemap: true
-	},
-	external: [],
-	plugins: [
-		svgi({
-			options: {
-				jsx: 'preact',
-			}
-		}),
-		buble({
-			jsx: 'h',
-			objectAssign: 'Object.assign',
-			transforms: { asyncAwait: false }
-		}),
-		nodeResolve({
-			modules: true,
-			jsnext: true
-		}),
-		// uglify({
-		// 	output: { comments: false },
-		// 	mangle: {
-		// 		toplevel: true,
-		// 		properties: { regex: /^_/ }
-		// 	}
-		// }),
-		// es3()
-	]
-};
+  input: 'app/index.js',
+  output: {
+    file: 'public/bundle.js',
+    format: 'esm',
+    sourcemap: true
+  },
+  plugins: [
+    svgi({
+      options: {
+        jsx: 'preact'
+      }
+    }),
+    buble({
+      jsx: 'h',
+      objectAssign: 'Object.assign',
+      transforms: { asyncAwait: false }
+    }),
+    resolve(),
+    PROD && terser(),
+    PROD && filesize({
+      showMinifiedSize: false,
+      showGzippedSize: false
+    })
+  ]
+}

@@ -1,6 +1,6 @@
 # Pixel Art
 
-A browser based pixel art maker and animation tool. [https://pixel-art-app.herokuapp.com/](https://pixel-art-app.herokuapp.com/)
+A browser based pixel art maker and animation tool. [https://www.spritepaint.com/](https://www.spritepaint.com/)
 
 ![Pixel Art](https://media1.giphy.com/media/lNWs3R5c8FZhY4836f/giphy.gif)
 

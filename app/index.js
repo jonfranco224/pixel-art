@@ -119,9 +119,9 @@ const downloadCanvas = (e) => {
       })
 
       includedColors.forEach((includedColor, includedColorI)=> {
+        newCanvasCtx.fillStyle = `rgba(${includedColor.color[0]}, ${includedColor.color[1]}, ${includedColor.color[2]}, 255)`
         newCanvasCtx.font = '20px serif';
         newCanvasCtx.fillText(includedColor.paletteIndex, (includedColorI * 80) + 15, 40);
-        newCanvasCtx.fillStyle = `rgba(${includedColor.color[0]}, ${includedColor.color[1]}, ${includedColor.color[2]}, 255)`
         newCanvasCtx.fillRect((includedColorI * 80) + 40, 0, 40, 40)
       })
 

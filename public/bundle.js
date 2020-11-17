@@ -1408,8 +1408,6 @@ var downloadCanvas = function (e) {
     e.target.setAttribute('href', image$1);
   }
 
-
-
   if (VIEW.downloadCanvas.type === 'numgrid') {
     c.width = APP.width;
     c.height = APP.height;
@@ -1424,8 +1422,6 @@ var downloadCanvas = function (e) {
     });
 
     var finalImage = ctx.getImageData(0, 0, c.width, c.height);
-
-    console.log(finalImage.data.length);
 
     var areRGBAsEqual = function (c1, a, c2, b) {
       return (
@@ -1451,11 +1447,13 @@ var downloadCanvas = function (e) {
 
       APP.palette.forEach(function (color, paletteIndex) {
         if (areRGBAsEqual(color, 0, [finalImage.data[i + 0], finalImage.data[i + 1], finalImage.data[i + 2], finalImage.data[i + 3]], 0)) {
-          newCanvasCtx.fillStyle = 'gray';
+          newCanvasCtx.fillStyle = 'rgba(5, 5, 5, .3)';
           newCanvasCtx.font = '20px serif';
           newCanvasCtx.fillText(paletteIndex, (x * 40) + 15, ((y + 2) * 40) - 15);
-          newCanvasCtx.strokeStyle = 'gray';
+          newCanvasCtx.strokeStyle = 'rgba(5, 5, 5, .2)';
           newCanvasCtx.strokeRect(x * 40, (y + 1) * 40, 40, 40);
+
+          console.log(paletteIndex);
 
           var includeColor = true;
       
@@ -1480,8 +1478,6 @@ var downloadCanvas = function (e) {
         newCanvasCtx.fillText(includedColor.paletteIndex, (includedColorI * 80) + 15, 40);
         newCanvasCtx.fillRect((includedColorI * 80) + 40, 0, 40, 40);
       });
-
-      
 
       index += 1;
     };

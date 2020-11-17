@@ -27,6 +27,9 @@ const downloadCanvas = (e) => {
       VIEW.canvasTemp.ctx.putImageData(layer.frames[APP.frameActive], 0, 0)
       ctx.drawImage(VIEW.canvasView.dom, 0, 0, c.width, c.height)
     })
+
+    const image = c.toDataURL('image/png').replace('image/png', 'image/octet-stream')
+    e.target.setAttribute('href', image)
   }
 
   if (VIEW.downloadCanvas.type === 'spritesheet') {
@@ -38,17 +41,77 @@ const downloadCanvas = (e) => {
     ctx.mozImageSmoothingEnabled = false
     ctx.imageSmoothingEnabled = false
 
-    console.log(APP.frameCount)
     for (let frameI = 0; frameI < APP.frameCount; frameI++) {
       APP.layers.forEach(layer => {
         VIEW.canvasTemp.ctx.putImageData(layer.frames[frameI], 0, 0)
         ctx.drawImage(VIEW.canvasTemp.dom, frameI * width, 0, width, height)
       })
     }
+
+    const image = c.toDataURL('image/png').replace('image/png', 'image/octet-stream')
+    e.target.setAttribute('href', image)
   }
 
-  const image = c.toDataURL('image/png').replace('image/png', 'image/octet-stream')
-  e.target.setAttribute('href', image)
+
+
+  if (VIEW.downloadCanvas.type === 'numgrid') {
+    c.width = APP.width
+    c.height = APP.height
+
+    ctx.webkitImageSmoothingEnabled = false
+    ctx.mozImageSmoothingEnabled = false
+    ctx.imageSmoothingEnabled = false
+
+    APP.layers.forEach(layer => {
+      VIEW.canvasTemp.ctx.putImageData(layer.frames[APP.frameActive], 0, 0)
+      ctx.drawImage(VIEW.canvasView.dom, 0, 0, c.width, c.height)
+    })
+
+    const finalImage = ctx.getImageData(0, 0, c.width, c.height)
+
+    console.log(finalImage.data.length)
+
+    const areRGBAsEqual = (c1, a, c2, b) => {
+      return (
+        c1[a + 0] === c2[b + 0] &&
+        c1[a + 1] === c2[b + 1] &&
+        c1[a + 2] === c2[b + 2] &&
+        c1[a + 3] === c2[b + 3]
+      )
+    }
+
+    const newCanvas = document.createElement('canvas')
+    newCanvas.width = APP.width * 40
+    newCanvas.height = APP.height * 40
+    const newCanvasCtx = newCanvas.getContext('2d')
+
+    let index = 0
+
+    for (let i = 0; i < finalImage.data.length; i += 4) {
+      let x = index % APP.width
+      let y = Math.floor(index / APP.height)
+
+      
+
+      APP.palette.forEach((color, paletteIndex) => {
+        if (areRGBAsEqual(color, 0, [finalImage.data[i + 0], finalImage.data[i + 1], finalImage.data[i + 2], finalImage.data[i + 3]], 0)) {
+          // newCanvasCtx.fillR
+          // console.log(paletteIndex)
+          console.log(x, y)
+          newCanvasCtx.font = '20px serif';
+
+          newCanvasCtx.fillText(paletteIndex, (x * 40) + 15, ((y + 1) * 40) - 15);
+          newCanvasCtx.strokeStyle = 'black';
+          newCanvasCtx.strokeRect(x * 40, y * 40, 40, 40);
+        }
+      })
+
+      index += 1
+    }
+
+    const image = newCanvas.toDataURL('image/png').replace('image/png', 'image/octet-stream')
+    e.target.setAttribute('href', image)
+  }
 }
 
 class View extends Component{
@@ -375,6 +438,7 @@ class View extends Component{
                         id="config-download-size" class="w-full">
                           <option value="frame">Frame</option>
                           <option value="spritesheet">Spritesheet</option>
+                          <option value="numgrid">Number Grid</option>
                       </select>
                     </div>
                   </div>

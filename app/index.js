@@ -82,29 +82,50 @@ const downloadCanvas = (e) => {
 
     const newCanvas = document.createElement('canvas')
     newCanvas.width = APP.width * 40
-    newCanvas.height = APP.height * 40
+    newCanvas.height = (APP.height * 40) + 40
     const newCanvasCtx = newCanvas.getContext('2d')
 
     let index = 0
+
+    let includedColors = []
 
     for (let i = 0; i < finalImage.data.length; i += 4) {
       let x = index % APP.width
       let y = Math.floor(index / APP.height)
 
-      
-
       APP.palette.forEach((color, paletteIndex) => {
         if (areRGBAsEqual(color, 0, [finalImage.data[i + 0], finalImage.data[i + 1], finalImage.data[i + 2], finalImage.data[i + 3]], 0)) {
-          // newCanvasCtx.fillR
-          // console.log(paletteIndex)
-          console.log(x, y)
+          newCanvasCtx.fillStyle = 'gray';
           newCanvasCtx.font = '20px serif';
+          newCanvasCtx.fillText(paletteIndex, (x * 40) + 15, ((y + 2) * 40) - 15);
+          newCanvasCtx.strokeStyle = 'gray';
+          newCanvasCtx.strokeRect(x * 40, (y + 1) * 40, 40, 40);
 
-          newCanvasCtx.fillText(paletteIndex, (x * 40) + 15, ((y + 1) * 40) - 15);
-          newCanvasCtx.strokeStyle = 'black';
-          newCanvasCtx.strokeRect(x * 40, y * 40, 40, 40);
+          let includeColor = true
+      
+          includedColors.forEach(colorPrep => {
+            if (areRGBAsEqual(colorPrep.color, 0, [finalImage.data[i + 0], finalImage.data[i + 1], finalImage.data[i + 2], finalImage.data[i + 3]], 0)) {
+              includeColor = false
+            }
+          })
+
+          if (includeColor) {
+            includedColors.push({
+              paletteIndex: paletteIndex,
+              color: [finalImage.data[i + 0], finalImage.data[i + 1], finalImage.data[i + 2], finalImage.data[i + 3]]
+            })
+          }
         }
       })
+
+      includedColors.forEach((includedColor, includedColorI)=> {
+        newCanvasCtx.font = '20px serif';
+        newCanvasCtx.fillText(includedColor.paletteIndex, (includedColorI * 80) + 15, 40);
+        newCanvasCtx.fillStyle = `rgba(${includedColor.color[0]}, ${includedColor.color[1]}, ${includedColor.color[2]}, 255)`
+        newCanvasCtx.fillRect((includedColorI * 80) + 40, 0, 40, 40)
+      })
+
+      
 
       index += 1
     }
